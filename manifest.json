@@ -1,0 +1,18 @@
+{
+  "manifest_version": 2,
+  "name": "Tabs Lord",
+  "description": "Extension for managing large number of tabs",
+  "version": "0.1",
+  "background": {
+    "scripts": [
+      "scripts/main.js"
+    ]
+  },
+  "browser_action": {
+    "default_icon": "images/lord-19x19.png",
+    "default_title": "Open Tabs Lord panel"
+  },
+  "permissions": [
+    "tabs"
+  ]
+}
