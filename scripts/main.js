@@ -5,18 +5,25 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 
   chrome.tabs.query({url: sidebarPageUrl}, function (sidebarTabs) {
     if (sidebarTabs.length === 0) {
-      chrome.windows.getLastFocused(null, function(lastFocusedWindow) {
-        console.log('Last focused window found: ' + lastFocusedWindow);
+      chrome.windows.getCurrent(null, function(currentWindow) {
+        console.log('Last focused window found: ' + currentWindow);
         console.log('Creating sidebar...');
-        chrome.windows.create({
-          url: sidebarPageUrl,
-          type: 'popup',
-          left: 0,
-          top: 0,
-          width: 400,
-          height: lastFocusedWindow.height
-        }, function() {
-          console.log('Sidebar created!');
+        chrome.system.display.getInfo(function(displaysInfo) {
+          var horizontalAdjustment = displaysInfo[0].workArea.left;
+          var workAreaHeight = displaysInfo[0].workArea.height;
+          chrome.windows.create(
+            {
+              url: sidebarPageUrl,
+              type: 'popup',
+              left: 0,
+              top: 0,
+              width: 400,
+              height: workAreaHeight
+            },
+            function() {
+              console.log('Sidebar created!');
+              chrome.windows.update(currentWindow.id, {left: horizontalAdjustment + 400, width: currentWindow.width - 400, height: workAreaHeight});
+          });
         });
       });
     }
@@ -26,6 +33,5 @@ chrome.browserAction.onClicked.addListener(function(tab) {
       }
       chrome.windows.update(sidebarTabs[0].windowId, {focused: true});
     }
-  })
+  });
 });
-

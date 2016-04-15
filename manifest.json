@@ -13,6 +13,7 @@
     "default_title": "Open Tabs Lord panel"
   },
   "permissions": [
-    "tabs"
+    "tabs",
+    "system.display"
   ]
 }
