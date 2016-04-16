@@ -26,13 +26,15 @@ chrome.browserAction.onClicked.addListener(function(tab) {
               console.log('Sidebar window created', sidebarWindow);
               chrome.windows.update(currentWindow.id, {left: workAreaLeft + 400, width: workAreaWidth - 400, top: workAreaTop, height: workAreaHeight});
               chrome.windows.onFocusChanged.addListener(function(focusedWindowId) {
-                console.log('Window focused', focusedWindowId);
-                chrome.windows.get(focusedWindowId, function(window) {
-                  /*if (window.type === 'normal') {
-                    chrome.windows.update(sidebarWindow.id, {focused: true}, function() {
-                    });
-                  }*/
-                });
+                if (focusedWindowId >= 0) {
+                  console.log('Window focused', focusedWindowId);
+                  chrome.windows.get(focusedWindowId, function(window) {
+                    /*if (window.type === 'normal') {
+                      chrome.windows.update(sidebarWindow.id, {focused: true}, function() {
+                      });
+                    }*/
+                  });
+                }
               });
             });
         });
