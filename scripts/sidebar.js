@@ -10,6 +10,7 @@ function onReady() {
         'dots': false
       }
     },
+    'plugins': ['dnd']
   });
 
   var tree = $('#tree-root').jstree(true);
