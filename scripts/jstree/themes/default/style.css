@@ -383,13 +383,14 @@
   height: 24px;
 }
 .jstree-default .jstree-icon {
-  width: 24px;
-  height: 24px;
+  width: 19px;
+  height: 19px;
   line-height: 24px;
+  background-size: contain !important;
 }
 .jstree-default .jstree-icon:empty {
-  width: 24px;
-  height: 24px;
+  width: 19px;
+  height: 19px;
   line-height: 24px;
 }
 .jstree-default.jstree-rtl .jstree-node {

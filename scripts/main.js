@@ -3,31 +3,41 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 
   console.log('Browser action called!');
 
-  chrome.tabs.query({url: sidebarPageUrl}, function (sidebarTabs) {
+  chrome.tabs.query({url: sidebarPageUrl}, function(sidebarTabs) {
     if (sidebarTabs.length === 0) {
       chrome.windows.getCurrent(null, function(currentWindow) {
-        console.log('Last focused window found: ' + currentWindow);
-        console.log('Creating sidebar...');
+        console.log('Last focused window found', currentWindow);
         chrome.system.display.getInfo(function(displaysInfo) {
-          var horizontalAdjustment = displaysInfo[0].workArea.left;
+          console.log('Loaded displays info', displaysInfo);
+          var workAreaLeft = displaysInfo[0].workArea.left;
+          var workAreaTop = displaysInfo[0].workArea.top;
           var workAreaHeight = displaysInfo[0].workArea.height;
+          var workAreaWidth = displaysInfo[0].workArea.width;
           chrome.windows.create(
             {
               url: sidebarPageUrl,
               type: 'popup',
-              left: 0,
-              top: 0,
+              left: workAreaLeft,
+              top: workAreaTop,
               width: 400,
               height: workAreaHeight
             },
-            function() {
-              console.log('Sidebar created!');
-              chrome.windows.update(currentWindow.id, {left: horizontalAdjustment + 400, width: currentWindow.width - 400, height: workAreaHeight});
-          });
+            function(sidebarWindow) {
+              console.log('Sidebar window created', sidebarWindow);
+              chrome.windows.update(currentWindow.id, {left: workAreaLeft + 400, width: workAreaWidth - 400, top: workAreaTop, height: workAreaHeight});
+              chrome.windows.onFocusChanged.addListener(function(focusedWindowId) {
+                console.log('Window focused', focusedWindowId);
+                chrome.windows.get(focusedWindowId, function(window) {
+                  /*if (window.type === 'normal') {
+                    chrome.windows.update(sidebarWindow.id, {focused: true}, function() {
+                    });
+                  }*/
+                });
+              });
+            });
         });
       });
-    }
-    else { // sidebar already exists
+    } else { // sidebar already exists
       for (var i = 1; i < sidebarTabs.length; i++) { // killing possible extra instances
         chrome.windows.remove(sidebarTabs[i].windowId);
       }

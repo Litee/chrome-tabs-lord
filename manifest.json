@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Tabs Lord",
   "description": "Extension for managing large number of tabs",
-  "version": "0.1",
+  "version": "0.1.2",
   "background": {
     "scripts": [
       "scripts/main.js"

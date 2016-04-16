@@ -27,10 +27,10 @@ function onReady() {
 
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
     windowsArr.forEach(function(window) {
-      console.log('Populating window ' + window.id);
+      console.log('Populating window', window);
       onWindowCreated(window);
       window.tabs.forEach(function(tab) {
-        console.log('Populating tab ' + tab.id);
+        console.log('Populating tab', tab);
         onTabCreated(tab);
       });
     });
@@ -54,6 +54,10 @@ function onReady() {
   function onWindowRemoved(windowId) {
     console.log('Window removed', windowId);
     tree.delete_node('window-' + windowId);
+  }
+
+  function onWindowFocusChanged(windowId) {
+
   }
 
   function onTabCreated(tab) {
