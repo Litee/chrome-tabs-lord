@@ -1,3 +1,43 @@
+/*(function($, undefined) {
+  'use strict';
+  var _s = document.createElement('SPAN');
+  _s.className = 'fa-stack jstree-stackedicon';
+  var _i = document.createElement('I');
+  _i.className = 'jstree-icon';
+  _i.setAttribute('role', 'presentation');
+
+  $.jstree.plugins.stackedicon = function(options, parent) {
+    this.teardown = function() {
+      this.element.find('.jstree-stackedicon').remove();
+      parent.teardown.call(this);
+    };
+    this.redraw_node = function(obj, deep, is_callback, force_render) {
+      obj = parent.redraw_node.apply(this, arguments);
+      if (obj) {
+        var i, j, tmp = null, icon = null, temp = null;
+        for (i = 0, j = obj.childNodes.length; i < j; i++) {
+          if (obj.childNodes[i] && obj.childNodes[i].className && obj.childNodes[i].className.indexOf('jstree-anchor') !== -1) {
+            tmp = obj.childNodes[i];
+            break;
+          }
+        }
+        if (tmp) {
+          if (this._model.data[obj.id].state.icons && this._model.data[obj.id].state.icons.length) {
+            icon = _s.cloneNode(false);
+            for (i = 0, j = this._model.data[obj.id].state.icons.length; i < j; i++) {
+              temp = _i.cloneNode(false);
+              temp.className += ' ' + this._model.data[obj.id].state.icons[i];
+              icon.appendChild(temp);
+            }
+            tmp.insertBefore(icon, tmp.childNodes[0]);
+          }
+        }
+      }
+      return obj;
+    };
+  };
+})(jQuery);*/
+
 $(document).ready(onReady);
 
 function onReady() {
@@ -19,8 +59,10 @@ function onReady() {
     function(evt, data) {
       var nodeMeta = data.node.original;
       if (nodeMeta.tabId) {
-        chrome.windows.update(nodeMeta.parentWindowId, {focused: true}, function() {
-          chrome.tabs.update(nodeMeta.tabId, {active: true});
+        chrome.tabs.get(nodeMeta.tabId, function(tab) {
+          chrome.windows.update(tab.windowId, {focused: true}, function() {
+            chrome.tabs.update(tab.id, {active: true});
+          });
         });
       }
     }
@@ -58,11 +100,22 @@ function onReady() {
 
   function onWindowCreated(window) {
     console.log('Window created', window);
-    return tree.create_node(null, {
+    tree.create_node(null, {
       'id': 'window-' + window.id,
       'text': 'Window',
       'windowId': window.id,
       'state': {'opened': true}
+    });
+    chrome.contextMenus.create({
+      id: 'tabs-lord-move-to-window-' + window.id,
+      parentId: 'tabs-lord-move-to-window-root',
+      title: 'Window ' + window.id,
+      contexts: ['page_action', 'page', 'frame'],
+      onclick: function(info, tab) {
+        var targetWindowId = parseInt(info.menuItemId.substring('tabs-lord-move-to-window-'.length));
+        console.log('Moving tab to another window', info, tab, targetWindowId);
+        chrome.tabs.move(tab.id, {windowId: targetWindowId, index: -1});
+      }
     });
   }
 
@@ -77,9 +130,12 @@ function onReady() {
       'id': 'tab-' + tab.id,
       'text': tab.title,
       'tabId': tab.id,
-      'parentWindowId': tab.windowId,
+      //'parentWindowId': tab.windowId,
       'icon': correctFavIconUrl(tab.favIconUrl)
     });
+    if (tab.index === 0) {
+      chrome.contextMenus.update('tabs-lord-move-to-window-' + tab.windowId, {title: 'With tab "' + tab.title + '"'});
+    }
   }
 
   function onTabRemoved(tabId, removeInfo) {
@@ -93,6 +149,9 @@ function onReady() {
     chrome.tabs.get(tabId, function(tab) {
       tree.set_text('tab-' + tabId, tab.title);
       tree.set_icon('tab-' + tabId, correctFavIconUrl(tab.favIconUrl));
+      if (tab.index === 0) {
+        chrome.contextMenus.update('tabs-lord-move-to-window-' + tab.windowId, {title: 'With tab "' + tab.title + '"'});
+      }
     });
   }
 
