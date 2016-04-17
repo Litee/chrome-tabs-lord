@@ -50,7 +50,7 @@ function onReady() {
         'dots': false
       }
     },
-    'plugins': ['dnd']
+    'plugins': ['dnd'/*, 'contextmenu'*/]
   });
 
   var tree = $('#tree-root').jstree(true);
@@ -92,11 +92,13 @@ function onReady() {
   });
   chrome.windows.onCreated.addListener(onWindowCreated);
   chrome.windows.onRemoved.addListener(onWindowRemoved);
+  chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
   chrome.tabs.onCreated.addListener(onTabCreated);
   chrome.tabs.onRemoved.addListener(onTabRemoved);
   chrome.tabs.onUpdated.addListener(onTabUpdated);
   chrome.tabs.onMoved.addListener(onTabMoved);
   chrome.tabs.onAttached.addListener(onTabAttached);
+  chrome.tabs.onActivated.addListener(onTabActivated);
 
   function onWindowCreated(window) {
     console.log('Window created', window);
@@ -122,6 +124,16 @@ function onReady() {
   function onWindowRemoved(windowId) {
     console.log('Window removed', windowId);
     tree.delete_node('window-' + windowId);
+  }
+
+  function onWindowFocusChanged(windowId) {
+    console.log('Window focused', windowId);
+    if (windowId != chrome.windows.WINDOW_ID_NONE) {
+      // TODO Scroll to active tab in tree
+      /*chrome.windows.get(windowId, {populate: true}, function(window) {
+
+      });*/
+    }
   }
 
   function onTabCreated(tab) {
@@ -170,6 +182,13 @@ function onReady() {
   function onTabAttached(tabId, attachInfo) {
     console.log('Tab attached', tabId, attachInfo);
     tree.move_node('tab-' + tabId, 'window-' + attachInfo.newWindowId, attachInfo.newPosition);
+  }
+
+  function onTabActivated(activeInfo) {
+    console.log('Tab activated', activeInfo);
+    tree.deselect_all(true); // true to suppress selection event
+    tree.select_node('tab-' + activeInfo.tabId, true); // true to suppress selection event
+    jQuery(document).scrollTop($('li#tab-' + activeInfo.tabId).offset().top);
   }
 
   console.log('Existing windows parsed!');
