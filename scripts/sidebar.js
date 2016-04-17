@@ -1,3 +1,4 @@
+'use strict';
 /*(function($, undefined) {
   'use strict';
   var _s = document.createElement('SPAN');
@@ -90,6 +91,29 @@ function onReady() {
       });
     });
   });
+
+  var searchBox = $('.sidebar-search-box');
+  searchBox.on('input', function() {
+    var searchText = searchBox.val().toLowerCase();
+    console.log('Search text changed', searchBox.val());
+    if (searchText.length === 0) {
+      tree.show_all();
+    } else {;
+      // hide nodes that do not match query
+      tree.hide_all();
+      $.each(tree._model.data, function(key, node) {
+        var nodeText = node.text;
+        if (nodeText && nodeText.toLowerCase().indexOf(searchText) > -1) {
+          var currentNodeId = node.id;
+          while (currentNodeId) {
+            tree.show_node(currentNodeId);
+            currentNodeId = tree.get_parent(currentNodeId);
+          }
+        }
+      });
+    }
+  });
+
   chrome.windows.onCreated.addListener(onWindowCreated);
   chrome.windows.onRemoved.addListener(onWindowRemoved);
   chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
