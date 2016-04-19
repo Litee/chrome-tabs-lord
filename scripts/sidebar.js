@@ -75,8 +75,7 @@ function onReady() {
             }
           });
         });
-      },
-      'show_at_node': false
+      }
     },
     'plugins': ['dnd', 'contextmenu', 'stackedicon']
   });
