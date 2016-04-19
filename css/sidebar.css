@@ -1,0 +1,10 @@
+.tabs-lord-close-icon {
+	background-image: url("/images/close.png");
+	background-size: contain;
+	width: 12px;
+	height: 12px;
+	display: inline-block;
+	margin-left: 6px;
+	vertical-align: middle;
+	text-align: center;
+}

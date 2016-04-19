@@ -1,6 +1,11 @@
 'use strict';
-/*(function($, undefined) {
-  'use strict';
+
+$(document).ready(onReady);
+
+function onReady() {
+  console.log('Sidebar view loaded! Reading information about existing windows...');
+
+  (function($, undefined) {
   var _s = document.createElement('SPAN');
   _s.className = 'fa-stack jstree-stackedicon';
   var _i = document.createElement('I');
@@ -13,36 +18,28 @@
       parent.teardown.call(this);
     };
     this.redraw_node = function(obj, deep, is_callback, force_render) {
+      var nodeId = obj;
       obj = parent.redraw_node.apply(this, arguments);
       if (obj) {
-        var i, j, tmp = null, icon = null, temp = null;
-        for (i = 0, j = obj.childNodes.length; i < j; i++) {
-          if (obj.childNodes[i] && obj.childNodes[i].className && obj.childNodes[i].className.indexOf('jstree-anchor') !== -1) {
-            tmp = obj.childNodes[i];
-            break;
-          }
-        }
-        if (tmp) {
-          if (this._model.data[obj.id].state.icons && this._model.data[obj.id].state.icons.length) {
-            icon = _s.cloneNode(false);
-            for (i = 0, j = this._model.data[obj.id].state.icons.length; i < j; i++) {
-              temp = _i.cloneNode(false);
-              temp.className += ' ' + this._model.data[obj.id].state.icons[i];
-              icon.appendChild(temp);
+        var liEl = $(obj);
+        if (liEl.find('.tabs-lord-close-icon').length === 0) {
+          var closeIconEl = $('<i class="tabs-lord-close-icon"></i>').click(function() {
+            if (nodeId.indexOf('tab-') === 0) {
+              chrome.tabs.remove(parseInt(nodeId.substring(4)));
             }
-            tmp.insertBefore(icon, tmp.childNodes[0]);
-          }
+            else {
+              if (confirm('Do you want to close tab?')) {
+                // TODO Close window
+              }
+            }
+          });
+          liEl.append(closeIconEl);
         }
       }
       return obj;
     };
   };
-})(jQuery);*/
-
-$(document).ready(onReady);
-
-function onReady() {
-  console.log('Sidebar view loaded! Reading information about existing windows...');
+})(jQuery);
 
   var jsTree = $('#tree-root').jstree({
     'core': {
@@ -51,7 +48,7 @@ function onReady() {
         'dots': false
       }
     },
-    'plugins': ['dnd'/*, 'contextmenu'*/]
+    'plugins': ['dnd'/*, 'contextmenu'*/, 'stackedicon']
   });
 
   var tree = $('#tree-root').jstree(true);
@@ -167,8 +164,8 @@ function onReady() {
       'text': tab.title,
       'tabId': tab.id,
       //'parentWindowId': tab.windowId,
-      'icon': correctFavIconUrl(tab.favIconUrl)
-    });
+      'icon': correctFavIconUrl(tab.favIconUrl),
+    }, tab.index);
     if (tab.index === 0) {
       chrome.contextMenus.update('tabs-lord-move-to-window-' + tab.windowId, {title: 'With tab "' + tab.title + '"'});
     }
