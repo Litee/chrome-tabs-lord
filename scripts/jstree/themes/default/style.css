@@ -139,7 +139,7 @@
   width: auto;
   color: black;
   white-space: nowrap;
-  line-height: 2.4em;
+  /*line-height: 2.4em;*/
   text-shadow: 1px 1px 0 white;
   border-radius: 1px;
 }
@@ -186,26 +186,26 @@
 .vakata-context li > a > i {
   text-decoration: none;
   display: inline-block;
-  width: 2.4em;
-  height: 2.4em;
+  width: 0.4em;
+  /*height: 2.4em;*/
   background: transparent;
   margin: 0 0 0 -2em;
   vertical-align: top;
   text-align: center;
-  line-height: 2.4em;
+  /*line-height: 2.4em;*/
 }
 .vakata-context li > a > i:empty {
-  width: 2.4em;
-  line-height: 2.4em;
+  /*width: 2.4em;*/
+  /*line-height: 2.4em;*/
 }
-.vakata-context li > a .vakata-contextmenu-sep {
+/* .vakata-context li > a .vakata-contextmenu-sep {
   display: inline-block;
   width: 1px;
   height: 2.4em;
   background: white;
   margin: 0 0.5em 0 0;
   border-left: 1px solid #e2e3e3;
-}
+} */
 .vakata-context .vakata-contextmenu-shortcut {
   font-size: 0.8em;
   color: silver;

@@ -23,7 +23,7 @@ function onReady() {
       if (obj) {
         if (nodeId && typeof nodeId === 'string' && nodeId.indexOf('tab-') === 0) {
           var liEl = $(obj);
-          if (liEl.find('.tabs-lord-close-icon').length === 0) {
+          if (liEl.find('i.tabs-lord-close-icon').length === 0) {
             var closeIconEl = $('<i class="tabs-lord-icon tabs-lord-icon-close"></i>').click(function() {
               chrome.tabs.remove(parseInt(nodeId.substring(4)));
             });
@@ -43,7 +43,42 @@ function onReady() {
         'dots': false
       }
     },
-    'plugins': ['dnd'/*, 'contextmenu'*/, 'stackedicon']
+    'contextmenu': {
+      'items': function(node, callback) {
+        chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windows) {
+          var moveToWindowActions = {};
+          $.each(windows, function(i, window) {
+            var menuLabel = window.tabs.length === 0 ? 'Window [' + i + ']' : 'With tab "' + window.tabs[0].title + '"';
+            moveToWindowActions['move-to-window-menu-' + window.id] = {
+              'label': menuLabel,
+              'action': function() {
+                console.log('Moving tab to another window', node, window.id);
+                chrome.tabs.move(node.original.tabId, {windowId: window.id, index: -1});
+              }
+            };
+          });
+          moveToWindowActions['move-to-window-menu-new'] = {
+            'label': 'New',
+            'action': function() {
+              console.log('Moving tab to a new window', node);
+              chrome.windows.create(
+              {
+                type: 'normal',
+                tabId: node.original.tabId
+              });
+            }
+          };
+          callback({
+            'move-to-window-menu': {
+              'label': 'Move to window',
+              'submenu': moveToWindowActions
+            }
+          });
+        });
+      },
+      'show_at_node': false
+    },
+    'plugins': ['dnd', 'contextmenu', 'stackedicon']
   });
 
   var tree = $('#tree-root').jstree(true);
@@ -104,8 +139,6 @@ function onReady() {
   chrome.tabs.onAttached.addListener(onTabAttached);
   chrome.tabs.onActivated.addListener(onTabActivated);
 
-  var createdMoveToWindowContextMenus = [];
-
   function onWindowCreated(window) {
     console.log('Window created', window);
     tree.create_node(null, {
@@ -114,21 +147,6 @@ function onReady() {
       'windowId': window.id,
       'state': {'opened': true}
     });
-    var menuItemId = 'tabs-lord-move-to-window-' + window.id;
-    if (!$.inArray(createdMoveToWindowContextMenus, menuItemId)) {
-      chrome.contextMenus.create({
-        id: menuItemId,
-        parentId: 'tabs-lord-move-to-window-root',
-        title: 'Window ' + window.id,
-        contexts: ['page_action', 'page', 'frame'],
-        onclick: function(info, tab) {
-          createdMoveToWindowContextMenus.push(menuItemId);
-          var targetWindowId = parseInt(info.menuItemId.substring('tabs-lord-move-to-window-'.length));
-          console.log('Moving tab to another window', info, tab, targetWindowId);
-          chrome.tabs.move(tab.id, {windowId: targetWindowId, index: -1});
-        }
-      });
-    }
   }
 
   function onWindowRemoved(windowId) {
@@ -144,7 +162,7 @@ function onReady() {
       chrome.windows.get(windowId, {populate: true}, function(window) {
         $.each(window.tabs, function(i, tab) {
           // if (tab.active)
-            // onTabActivated({tabId: tab.id});
+          // onTabActivated({tabId: tab.id});
         });
       });
     }
@@ -179,9 +197,6 @@ function onReady() {
       tree.set_icon(nodeId, correctFavIconUrl(tab.favIconUrl));
       var node = tree.get_node(nodeId);
       node.orginal.url = tab.url;
-      if (tab.index === 0) {
-        chrome.contextMenus.update('tabs-lord-move-to-window-' + tab.windowId, {title: 'With tab "' + tab.title + '"'});
-      }
     });
   }
 
