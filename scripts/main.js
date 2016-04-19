@@ -3,16 +3,7 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 
   console.log('Browser action called!');
 
-  chrome.contextMenus.create({
-    id: 'tabs-lord-move-to-window-root',
-    title: 'Move to window',
-    contexts: ['page_action', 'page', 'frame'],
-    onclick: function() {
-      console.log('Custom menu was clicked', arguments);
-    }
-  });
-
-  chrome.tabs.query({url: sidebarPageUrl}, function(sidebarTabs) {
+   chrome.tabs.query({url: sidebarPageUrl}, function(sidebarTabs) {
     if (sidebarTabs.length === 0) {
       chrome.windows.getCurrent(null, function(currentWindow) {
         console.log('Last focused window found', currentWindow);
