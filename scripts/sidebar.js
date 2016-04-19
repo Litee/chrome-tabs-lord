@@ -21,19 +21,14 @@ function onReady() {
       var nodeId = obj;
       obj = parent.redraw_node.apply(this, arguments);
       if (obj) {
-        var liEl = $(obj);
-        if (liEl.find('.tabs-lord-close-icon').length === 0) {
-          var closeIconEl = $('<i class="tabs-lord-close-icon"></i>').click(function() {
-            if (nodeId.indexOf('tab-') === 0) {
+        if (nodeId && typeof nodeId === 'string' && nodeId.indexOf('tab-') === 0) {
+          var liEl = $(obj);
+          if (liEl.find('.tabs-lord-close-icon').length === 0) {
+            var closeIconEl = $('<i class="tabs-lord-icon tabs-lord-icon-close"></i>').click(function() {
               chrome.tabs.remove(parseInt(nodeId.substring(4)));
-            }
-            else {
-              if (confirm('Do you want to close tab?')) {
-                // TODO Close window
-              }
-            }
-          });
-          liEl.append(closeIconEl);
+            });
+            liEl.append(closeIconEl);
+          }
         }
       }
       return obj;
@@ -66,18 +61,6 @@ function onReady() {
     }
   );
 
-  /*jsTree.on('create_node.jstree', function(e, data) {
-    var tabId = data.node.original.tabId;
-    if (tabId) {
-      var nodeElement = $('li#' + data.node.id).find('a');
-      nodeElement.dblclick(function() {
-        alert('Clicked ' + data.node.id);
-      });
-      var closeIcon = $('<span>').css('background-image', 'url("/images/close.png")').click(function() {
-        chrome.tabs.remove(tabId);
-      }).append('<p>[X]</p>').appendTo(nodeElement);
-    }
-  });*/
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
     windowsArr.forEach(function(window) {
       console.log('Populating window', window);
@@ -121,6 +104,8 @@ function onReady() {
   chrome.tabs.onAttached.addListener(onTabAttached);
   chrome.tabs.onActivated.addListener(onTabActivated);
 
+  var createdMoveToWindowContextMenus = [];
+
   function onWindowCreated(window) {
     console.log('Window created', window);
     tree.create_node(null, {
@@ -129,31 +114,39 @@ function onReady() {
       'windowId': window.id,
       'state': {'opened': true}
     });
-    chrome.contextMenus.create({
-      id: 'tabs-lord-move-to-window-' + window.id,
-      parentId: 'tabs-lord-move-to-window-root',
-      title: 'Window ' + window.id,
-      contexts: ['page_action', 'page', 'frame'],
-      onclick: function(info, tab) {
-        var targetWindowId = parseInt(info.menuItemId.substring('tabs-lord-move-to-window-'.length));
-        console.log('Moving tab to another window', info, tab, targetWindowId);
-        chrome.tabs.move(tab.id, {windowId: targetWindowId, index: -1});
-      }
-    });
+    var menuItemId = 'tabs-lord-move-to-window-' + window.id;
+    if (!$.inArray(createdMoveToWindowContextMenus, menuItemId)) {
+      chrome.contextMenus.create({
+        id: menuItemId,
+        parentId: 'tabs-lord-move-to-window-root',
+        title: 'Window ' + window.id,
+        contexts: ['page_action', 'page', 'frame'],
+        onclick: function(info, tab) {
+          createdMoveToWindowContextMenus.push(menuItemId);
+          var targetWindowId = parseInt(info.menuItemId.substring('tabs-lord-move-to-window-'.length));
+          console.log('Moving tab to another window', info, tab, targetWindowId);
+          chrome.tabs.move(tab.id, {windowId: targetWindowId, index: -1});
+        }
+      });
+    }
   }
 
   function onWindowRemoved(windowId) {
     console.log('Window removed', windowId);
     tree.delete_node('window-' + windowId);
+    // TODO Remove context menu item
   }
 
   function onWindowFocusChanged(windowId) {
     console.log('Window focused', windowId);
     if (windowId != chrome.windows.WINDOW_ID_NONE) {
       // TODO Scroll to active tab in tree
-      /*chrome.windows.get(windowId, {populate: true}, function(window) {
-
-      });*/
+      chrome.windows.get(windowId, {populate: true}, function(window) {
+        $.each(window.tabs, function(i, tab) {
+          if (tab.active)
+            onTabActivated({tabId: tab.id});
+        });
+      });
     }
   }
 
@@ -209,7 +202,10 @@ function onReady() {
     console.log('Tab activated', activeInfo);
     tree.deselect_all(true); // true to suppress selection event
     tree.select_node('tab-' + activeInfo.tabId, true); // true to suppress selection event
-    jQuery(document).scrollTop($('li#tab-' + activeInfo.tabId).offset().top);
+    var nodeElement = $('li#tab-' + activeInfo.tabId);
+    if (!nodeElement.visible()) {
+      jQuery(document).scrollTop(nodeElement.offset().top);
+    }
   }
 
   console.log('Existing windows parsed!');
