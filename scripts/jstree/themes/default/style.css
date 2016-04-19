@@ -373,30 +373,30 @@
   background: linear-gradient(to bottom, #beebff 0%, #a8e4ff 100%);
 }
 .jstree-default .jstree-node {
-  min-height: 24px;
-  line-height: 24px;
-  margin-left: 24px;
-  min-width: 24px;
+  min-height: 18px;
+  line-height: 18px;
+  margin-left: 18px;
+  min-width: 18px;
 }
 .jstree-default .jstree-anchor {
-  line-height: 24px;
-  height: 24px;
+  line-height: 18px;
+  height: 18px;
 }
 .jstree-default .jstree-icon {
-  width: 19px;
-  height: 19px;
-  line-height: 24px;
+  width: 16px;
+  height: 16px;
+  line-height: 18px;
 }
 .jstree-default .jstree-icon:empty {
-  width: 19px;
-  height: 19px;
-  line-height: 24px;
+  width: 16px;
+  height: 16px;
+  line-height: 18px;
 }
 .jstree-default.jstree-rtl .jstree-node {
   margin-right: 24px;
 }
 .jstree-default .jstree-wholerow {
-  height: 24px;
+  height: 18px;
 }
 .jstree-default .jstree-node,
 .jstree-default .jstree-icon {

@@ -83,7 +83,7 @@ function onReady() {
       tree.hide_all();
       $.each(tree._model.data, function(key, node) {
         var nodeText = node.text;
-        if (nodeText && nodeText.toLowerCase().indexOf(searchText) > -1) {
+        if (nodeText && (nodeText.toLowerCase().indexOf(searchText) > -1 || (node.original && node.original.url && node.original.url.toLowerCase().indexOf(searchText) > -1))) {
           var currentNodeId = node.id;
           while (currentNodeId) {
             tree.show_node(currentNodeId);
@@ -143,8 +143,8 @@ function onReady() {
       // TODO Scroll to active tab in tree
       chrome.windows.get(windowId, {populate: true}, function(window) {
         $.each(window.tabs, function(i, tab) {
-          if (tab.active)
-            onTabActivated({tabId: tab.id});
+          // if (tab.active)
+            // onTabActivated({tabId: tab.id});
         });
       });
     }
@@ -158,6 +158,7 @@ function onReady() {
       'tabId': tab.id,
       //'parentWindowId': tab.windowId,
       'icon': correctFavIconUrl(tab.favIconUrl),
+      'url': tab.url
     }, tab.index);
     if (tab.index === 0) {
       chrome.contextMenus.update('tabs-lord-move-to-window-' + tab.windowId, {title: 'With tab "' + tab.title + '"'});
@@ -173,8 +174,11 @@ function onReady() {
     console.log('Tab updated', tabId, changeInfo);
     // TODO rethink - could be too much overhead
     chrome.tabs.get(tabId, function(tab) {
-      tree.set_text('tab-' + tabId, tab.title);
-      tree.set_icon('tab-' + tabId, correctFavIconUrl(tab.favIconUrl));
+      var nodeId = 'tab-' + tabId;
+      tree.set_text(nodeId, tab.title);
+      tree.set_icon(nodeId, correctFavIconUrl(tab.favIconUrl));
+      var node = tree.get_node(nodeId);
+      node.orginal.url = tab.url;
       if (tab.index === 0) {
         chrome.contextMenus.update('tabs-lord-move-to-window-' + tab.windowId, {title: 'With tab "' + tab.title + '"'});
       }
