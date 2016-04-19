@@ -6,35 +6,35 @@ function onReady() {
   console.log('Sidebar view loaded! Reading information about existing windows...');
 
   (function($, undefined) {
-  var _s = document.createElement('SPAN');
-  _s.className = 'fa-stack jstree-stackedicon';
-  var _i = document.createElement('I');
-  _i.className = 'jstree-icon';
-  _i.setAttribute('role', 'presentation');
+    var _s = document.createElement('SPAN');
+    _s.className = 'fa-stack jstree-stackedicon';
+    var _i = document.createElement('I');
+    _i.className = 'jstree-icon';
+    _i.setAttribute('role', 'presentation');
 
-  $.jstree.plugins.stackedicon = function(options, parent) {
-    this.teardown = function() {
-      this.element.find('.jstree-stackedicon').remove();
-      parent.teardown.call(this);
-    };
-    this.redraw_node = function(obj, deep, is_callback, force_render) {
-      var nodeId = obj;
-      obj = parent.redraw_node.apply(this, arguments);
-      if (obj) {
-        if (nodeId && typeof nodeId === 'string' && nodeId.indexOf('tab-') === 0) {
-          var liEl = $(obj);
-          if (liEl.find('i.tabs-lord-close-icon').length === 0) {
-            var closeIconEl = $('<i class="tabs-lord-icon tabs-lord-icon-close"></i>').click(function() {
-              chrome.tabs.remove(parseInt(nodeId.substring(4)));
-            });
-            liEl.append(closeIconEl);
+    $.jstree.plugins.stackedicon = function(options, parent) {
+      this.teardown = function() {
+        this.element.find('.jstree-stackedicon').remove();
+        parent.teardown.call(this);
+      };
+      this.redraw_node = function(obj, deep, is_callback, force_render) {
+        var nodeId = obj;
+        obj = parent.redraw_node.apply(this, arguments);
+        if (obj) {
+          if (nodeId && typeof nodeId === 'string' && nodeId.indexOf('tab-') === 0) {
+            var liEl = $(obj);
+            if (liEl.find('i.tabs-lord-close-icon').length === 0) {
+              var closeIconEl = $('<i class="tabs-lord-icon tabs-lord-icon-close"></i>').click(function() {
+                chrome.tabs.remove(parseInt(nodeId.substring(4)));
+              });
+              liEl.append(closeIconEl);
+            }
           }
         }
-      }
-      return obj;
+        return obj;
+      };
     };
-  };
-})(jQuery);
+  })(jQuery);
 
   var jsTree = $('#tree-root').jstree({
     'core': {
@@ -44,48 +44,60 @@ function onReady() {
       }
     },
     'contextmenu': {
-      'items': function(node, callback) {
-        chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windows) {
-          var moveToWindowActions = {};
-          $.each(windows, function(i, window) {
-            var menuLabel = window.tabs.length === 0 ? 'Window [' + i + ']' : 'With tab "' + window.tabs[0].title + '"';
-            moveToWindowActions['move-to-window-menu-' + window.id] = {
-              'label': menuLabel,
-              'action': function() {
-                console.log('Moving tab to another window', node, window.id);
-                chrome.tabs.move(node.original.tabId, {windowId: window.id, index: -1});
-              }
-            };
-          });
-          moveToWindowActions['move-to-window-menu-new'] = {
-            'label': 'New',
-            'action': function() {
-              console.log('Moving tab to a new window', node);
-              chrome.windows.create(
-              {
-                type: 'normal',
-                tabId: node.original.tabId
-              });
-            }
-          };
-          callback({
-            'move-to-window-menu': {
-              'label': 'Move to window',
-              'submenu': moveToWindowActions
-            }
-          });
-        });
-      }
+      'items': generateContextMenu
     },
     'plugins': ['dnd', 'contextmenu', 'stackedicon']
   });
 
   var tree = $('#tree-root').jstree(true);
 
+  function generateContextMenu(node, callback) {
+    var selectedNodes = tree.get_selected(true); // return full nodes
+    if (selectedNodes.length === 0) {
+      selectedNodes.push(node);
+    }
+    chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windows) {
+      var moveToWindowActions = {};
+      $.each(windows, function(i, window) {
+        var menuLabel = window.tabs.length === 0 ? 'Window [' + i + ']' : 'With tab "' + window.tabs[0].title + '"';
+        moveToWindowActions['move-to-window-menu-' + window.id] = {
+          'label': menuLabel,
+          'action': function() {
+            console.log('Moving tab(s) to another window', selectedNodes, window.id);
+            chrome.tabs.move(selectedNodes.map(function(node) { return node.original.tabId; }), {windowId: window.id, index: -1});
+          }
+        };
+      });
+      moveToWindowActions['move-to-window-menu-new'] = {
+        'label': 'New',
+        'action': function() {
+          console.log('Moving tab to a new window', node);
+          chrome.windows.create(
+          {
+            type: 'normal',
+            tabId: selectedNodes[0].original.tabId
+          }, function(newWindow) {
+            /*if (selectedNodes.length > 1) {
+              chrome.tabs.move(selectedNodes.slice(1).map(function(node) { return node.original.tabId; }), {windowId: newWindow.id, index: 1}, function() {
+                tree.deselect_all(true);
+              });
+            }*/
+          });
+        }
+      };
+      callback({
+        'move-to-window-menu': {
+          'label': 'Move to window',
+          'submenu': moveToWindowActions
+        }
+      });
+    });
+  }
+
   jsTree.on('select_node.jstree',
     function(evt, data) {
       var nodeMeta = data.node.original;
-      if (nodeMeta.tabId) {
+      if (nodeMeta.tabId && data.selected.length === 1) {
         chrome.tabs.get(nodeMeta.tabId, function(tab) {
           chrome.windows.update(tab.windowId, {focused: true}, function() {
             chrome.tabs.update(tab.id, {active: true});
