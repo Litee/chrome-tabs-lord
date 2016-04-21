@@ -52,14 +52,28 @@ function onReady() {
   var tree = $('#tree-root').jstree(true);
 
   function generateContextMenu(node, callback) {
+    console.log('Creating context menu', node);
     var selectedNodes = tree.get_selected(true); // return full nodes
     if (selectedNodes.length === 0) {
       selectedNodes.push(node);
     }
+    selectedNodes = selectedNodes.filter(function(n) { return n.original.tabId; });
+    if (selectedNodes.length === 0) {
+      callback({
+        'rename-window-menu' : {
+          'label': 'Rename window',
+          'action': function() {
+            tree.edit(node);
+          }
+        }
+      });
+      return; // Only window nodes are selected
+    }
     chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windows) {
       var moveToWindowActions = {};
       $.each(windows, function(i, window) {
-        var menuLabel = window.tabs.length === 0 ? 'Window [' + i + ']' : 'With tab "' + window.tabs[0].title + '"';
+        var node = tree.get_node('window-' + window.id);
+        var menuLabel = node.text === 'Window' ? (window.tabs.length === 0 ? 'Window [' + i + ']'  : 'With tab "' + window.tabs[0].title + '"') : node.text;
         moveToWindowActions['move-to-window-menu-' + window.id] = {
           'label': menuLabel,
           'action': function() {
@@ -69,19 +83,24 @@ function onReady() {
         };
       });
       moveToWindowActions['move-to-window-menu-new'] = {
-        'label': 'New',
+        'label': 'New Window',
         'action': function() {
-          console.log('Moving tab to a new window', node);
+          console.log('Moving tab(s) to a new window', selectedNodes);
+          console.log('First tab to move', selectedNodes[0]);
           chrome.windows.create(
           {
             type: 'normal',
             tabId: selectedNodes[0].original.tabId
           }, function(newWindow) {
-            /*if (selectedNodes.length > 1) {
-              chrome.tabs.move(selectedNodes.slice(1).map(function(node) { return node.original.tabId; }), {windowId: newWindow.id, index: 1}, function() {
+            if (selectedNodes.length > 1) {
+              // Using timeouts to prevent weird tabs flickering - the best idea I have so far
+              setTimeout(function() {
                 tree.deselect_all(true);
-              });
-            }*/
+              }, 100);
+              setTimeout(function() {
+                chrome.tabs.move(selectedNodes.slice(1).map(function(node) { return node.original.tabId; }), {windowId: newWindow.id, index: -1}, function() {});
+              }, 200);
+            }
           });
         }
       };

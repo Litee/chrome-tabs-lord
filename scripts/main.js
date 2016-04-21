@@ -3,7 +3,7 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 
   console.log('Browser action called!');
 
-   chrome.tabs.query({url: sidebarPageUrl}, function(sidebarTabs) {
+  chrome.tabs.query({url: sidebarPageUrl}, function(sidebarTabs) {
     if (sidebarTabs.length === 0) {
       chrome.windows.getCurrent(null, function(currentWindow) {
         console.log('Last focused window found', currentWindow);
