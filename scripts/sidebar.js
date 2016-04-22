@@ -223,8 +223,9 @@ function onReady() {
       tree.set_text(nodeId, tab.title);
       tree.set_icon(nodeId, correctFavIconUrl(tab.favIconUrl));
       var node = tree.get_node(nodeId);
+      console.log("Updating node", node)
       if (node) {
-        node.orginal.url = tab.url;
+        node.original.url = tab.url;
       }
     });
   }
