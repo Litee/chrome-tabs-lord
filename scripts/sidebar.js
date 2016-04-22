@@ -60,7 +60,7 @@ function onReady() {
     selectedNodes = selectedNodes.filter(function(n) { return n.original.tabId; });
     if (selectedNodes.length === 0) {
       callback({
-        'rename-window-menu' : {
+        'rename-window-menu': {
           'label': 'Rename window',
           'action': function() {
             tree.edit(node);
@@ -208,9 +208,6 @@ function onReady() {
       'icon': correctFavIconUrl(tab.favIconUrl),
       'url': tab.url
     }, tab.index);
-    if (tab.index === 0) {
-      chrome.contextMenus.update('tabs-lord-move-to-window-' + tab.windowId, {title: 'With tab "' + tab.title + '"'});
-    }
   }
 
   function onTabRemoved(tabId, removeInfo) {
@@ -226,7 +223,9 @@ function onReady() {
       tree.set_text(nodeId, tab.title);
       tree.set_icon(nodeId, correctFavIconUrl(tab.favIconUrl));
       var node = tree.get_node(nodeId);
-      node.orginal.url = tab.url;
+      if (node) {
+        node.orginal.url = tab.url;
+      }
     });
   }
 
