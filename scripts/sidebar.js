@@ -46,7 +46,7 @@ function onReady() {
     'contextmenu': {
       'items': generateContextMenu
     },
-    'plugins': ['dnd', 'contextmenu', 'stackedicon']
+    'plugins': ['dnd', 'contextmenu', 'stackedicon', "wholerow"]
   });
 
   var tree = $('#tree-root').jstree(true);
@@ -126,6 +126,20 @@ function onReady() {
     }
   );
 
+/*  console.log('Loading persistent settings from local storage...');
+  var windowInfos = [];
+  for (int i = 0; i < localStorage.length; i++) {
+    var key = localStorage.key(i);
+    // TODO Think about better matching - quick and dirty now
+    if (key.indexOf('tabs-lord') === 0) { // ignoring unrelated items
+      if (key.indexOf('tabs-lord-window') === 0) {
+        var windowInfo = JSON.parse(localStorage.getItem(key));
+        console.log("Loaded information about window", windowInfo);
+        windowInfos.push(windowInfo);
+      }
+    }
+  }
+  console.log('Settings from local storage restored!');*/
   console.log('Parsing existing windows...');
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
     windowsArr.forEach(function(window) {
