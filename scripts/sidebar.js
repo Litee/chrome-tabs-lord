@@ -126,6 +126,7 @@ function onReady() {
     }
   );
 
+  console.log('Parsing existing windows...');
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
     windowsArr.forEach(function(window) {
       console.log('Populating window', window);
@@ -135,6 +136,7 @@ function onReady() {
         onTabCreated(tab);
       });
     });
+    console.log('Existing windows parsed!');
   });
 
   var searchBox = $('.sidebar-search-box');
@@ -223,7 +225,7 @@ function onReady() {
       tree.set_text(nodeId, tab.title);
       tree.set_icon(nodeId, correctFavIconUrl(tab.favIconUrl));
       var node = tree.get_node(nodeId);
-      console.log("Updating node", node)
+      console.log('Updating node', node)
       if (node) {
         node.original.url = tab.url;
       }
@@ -257,5 +259,13 @@ function onReady() {
     }
   }
 
-  console.log('Existing windows parsed!');
+}
+
+function guid() {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
