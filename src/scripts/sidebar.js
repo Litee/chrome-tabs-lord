@@ -38,15 +38,26 @@ function onReady() {
 
   var jsTree = $('#tree-root').jstree({
     'core': {
-      'check_callback': true,
+      'check_callback': function(operation, node, node_parent, node_position, more) {
+        if (operation === 'move_node') {
+          console.log(arguments);
+          return node_parent && node_parent.original && !node_parent.original.tabId;
+        }
+        return true;
+      },
       'themes': {
         'dots': false
       }
     },
+    'plugins': ['dnd', 'contextmenu', 'tablordnodeicons', 'wholerow'],
     'contextmenu': {
       'items': generateContextMenu
     },
-    'plugins': ['dnd', 'contextmenu', 'tablordnodeicons', 'wholerow']
+    'dnd': {
+      'is_draggable': function(nodes) {
+        return nodes.every(function(node) { return node.original && node.original.tabId; });
+      }
+    }
   });
 
   var tree = $('#tree-root').jstree(true);
