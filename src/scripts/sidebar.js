@@ -307,21 +307,26 @@ function onReady() {
     return {windows:[]};
   }
 
-  // TODO: Rethink when state should be saved - currently it is saved very often
+  var saveStateTimer = null;
   function saveState() {
-    chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
-      var state = {windows:[]};
-      windowsArr.forEach(function(window) {
-        if (window.tabs.length > 0) {
-          var node = tree.get_node('window-' + window.id);
-          var windowInfo = {firstTabUrl: window.tabs[0].url, windowName: node.text};
-          state.windows.push(windowInfo);
-        } else {
-          console.log('Window doesn\'t have tabs - cannot save information about it', window);
-        }
+    clearTimeout(saveStateTimer);
+    saveStateTimer = setTimeout(function() {
+      console.log('Saving state...');
+      chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
+        var state = {windows:[]};
+        windowsArr.forEach(function(window) {
+          if (window.tabs.length > 0) {
+            var node = tree.get_node('window-' + window.id);
+            var windowInfo = {firstTabUrl: window.tabs[0].url, windowName: node.text};
+            state.windows.push(windowInfo);
+          } else {
+            console.log('Window doesn\'t have tabs - cannot save information about it', window);
+          }
+        });
+        var newState = JSON.stringify(state);
+        localStorage.setItem('tabs-lord-state', newState);
+        console.log('State saved!', state);
       });
-      console.log('Saving state', state);
-      localStorage.setItem('tabs-lord-state', JSON.stringify(state));
-    });
+    }, 1000);
   }
 }
