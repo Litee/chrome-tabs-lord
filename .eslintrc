@@ -1,0 +1,30 @@
+{
+  "globals": {
+    "$": true,
+    "console": true,
+    "chrome": true,
+    "jQuery": true
+  },
+  "rules": {
+    "indent": [
+      "error",
+      2
+    ],
+    "quotes": [
+      "error",
+      "single"
+    ],
+    "semi": [
+      "error",
+      "always"
+    ],
+    "no-console": "off",
+    "no-shadow": "warn",
+    "eqeqeq": "warn"
+  },
+  "env": {
+    "es6": false,
+    "browser": true
+  },
+  "extends": "eslint:recommended"
+}

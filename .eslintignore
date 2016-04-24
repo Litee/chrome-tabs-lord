@@ -1,0 +1,3 @@
+src/scripts/jquery/**/*.*
+src/scripts/jquery.visible/**/*.*
+src/scripts/jstree/**/*.*

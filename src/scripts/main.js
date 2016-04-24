@@ -1,4 +1,4 @@
-chrome.browserAction.onClicked.addListener(function(tab) {
+chrome.browserAction.onClicked.addListener(function() {
   var sidebarPageUrl = chrome.extension.getURL('sidebar.html');
 
   console.log('Browser action called!');
@@ -27,9 +27,9 @@ chrome.browserAction.onClicked.addListener(function(tab) {
               chrome.windows.update(currentWindow.id, {left: workAreaLeft + 400, width: workAreaWidth - 400, top: workAreaTop, height: workAreaHeight});
               var activatingSidebar = false;
               chrome.windows.onFocusChanged.addListener(function(focusedWindowId) {
-                if (focusedWindowId >= 0 && focusedWindowId != sidebarWindow.id && !activatingSidebar) {
+                if (focusedWindowId >= 0 && focusedWindowId !== sidebarWindow.id && !activatingSidebar) {
                   console.log('Window focused', focusedWindowId);
-                  chrome.windows.get(focusedWindowId, function(window) {
+                  chrome.windows.get(focusedWindowId, function() {
                     activatingSidebar = true;
                     chrome.windows.update(sidebarWindow.id, {focused: true}, function() {
                       chrome.windows.update(focusedWindowId, {focused: true}, function() {

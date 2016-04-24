@@ -5,19 +5,19 @@ $(document).ready(onReady);
 function onReady() {
   console.log('Sidebar view loaded! Reading information about existing windows...');
 
-  (function($, undefined) {
+  (function($) {
     var _s = document.createElement('SPAN');
     _s.className = 'fa-stack jstree-stackedicon';
     var _i = document.createElement('I');
     _i.className = 'jstree-icon';
     _i.setAttribute('role', 'presentation');
 
-    $.jstree.plugins.stackedicon = function(options, parent) {
+    $.jstree.plugins.tablordnodeicons = function(options, parent) {
       this.teardown = function() {
-        this.element.find('.jstree-stackedicon').remove();
+        this.element.find('.tabs-lord-icon').remove();
         parent.teardown.call(this);
       };
-      this.redraw_node = function(obj, deep, is_callback, force_render) {
+      this.redraw_node = function(obj) {
         var nodeId = obj;
         obj = parent.redraw_node.apply(this, arguments);
         if (obj) {
@@ -46,16 +46,16 @@ function onReady() {
     'contextmenu': {
       'items': generateContextMenu
     },
-    'plugins': ['dnd', 'contextmenu', 'stackedicon', 'wholerow']
+    'plugins': ['dnd', 'contextmenu', 'tablordnodeicons', 'wholerow']
   });
 
   var tree = $('#tree-root').jstree(true);
 
-  function generateContextMenu(node, callback) {
-    console.log('Creating context menu', node);
+  function generateContextMenu(contextMenuNode, callback) {
+    console.log('Creating context menu', contextMenuNode);
     var selectedNodes = tree.get_selected(true); // return full nodes
     if (selectedNodes.length === 0) {
-      selectedNodes.push(node);
+      selectedNodes.push(contextMenuNode);
     }
     selectedNodes = selectedNodes.filter(function(n) { return n.original.tabId; });
     if (selectedNodes.length === 0) {
@@ -63,10 +63,10 @@ function onReady() {
         'rename-window-menu': {
           'label': 'Rename window',
           'action': function() {
-            tree.edit(node, null, function(editedNode, nodeWasRenamed) {
+            tree.edit(contextMenuNode, null, function(editedNode, nodeWasRenamed) {
               console.log('Node editing has finished', editedNode, nodeWasRenamed);
               if (nodeWasRenamed) {
-               saveState();
+                saveState();
               }
             });
           }
@@ -77,8 +77,8 @@ function onReady() {
     chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windows) {
       var moveToWindowActions = {};
       $.each(windows, function(i, window) {
-        var node = tree.get_node('window-' + window.id);
-        var menuLabel = node.text === 'Window' ? (window.tabs.length === 0 ? 'Window [' + i + ']'  : 'With tab "' + window.tabs[0].title + '"') : node.text;
+        var windowNode = tree.get_node('window-' + window.id);
+        var menuLabel = windowNode.text === 'Window' ? (window.tabs.length === 0 ? 'Window [' + i + ']'  : 'With tab "' + window.tabs[0].title + '"') : windowNode.text;
         moveToWindowActions['move-to-window-menu-' + window.id] = {
           'label': menuLabel,
           'action': function() {
@@ -93,10 +93,10 @@ function onReady() {
           console.log('Moving tab(s) to a new window', selectedNodes);
           console.log('First tab to move', selectedNodes[0]);
           chrome.windows.create(
-          {
-            type: 'normal',
-            tabId: selectedNodes[0].original.tabId
-          }, function(newWindow) {
+            {
+              type: 'normal',
+              tabId: selectedNodes[0].original.tabId
+            }, function(newWindow) {
             if (selectedNodes.length > 1) {
               // Using timeouts to prevent weird tabs flickering - the best idea I have so far
               setTimeout(function() {
@@ -159,7 +159,7 @@ function onReady() {
     console.log('Search text changed', searchBox.val());
     if (searchText.length === 0) {
       tree.show_all();
-    } else {;
+    } else {
       // hide nodes that do not match query
       tree.hide_all();
       $.each(tree._model.data, function(key, node) {
@@ -203,15 +203,15 @@ function onReady() {
 
   function onWindowFocusChanged(windowId) {
     console.log('Window focused', windowId);
-    if (windowId != chrome.windows.WINDOW_ID_NONE) {
+/*    if (windowId != chrome.windows.WINDOW_ID_NONE) {
       // TODO Scroll to active tab in tree
       chrome.windows.get(windowId, {populate: true}, function(window) {
         $.each(window.tabs, function(i, tab) {
-          // if (tab.active)
-          // onTabActivated({tabId: tab.id});
+          if (tab.active)
+          onTabActivated({tabId: tab.id});
         });
       });
-    }
+    }*/
   }
 
   function onTabCreated(tab) {
@@ -241,7 +241,7 @@ function onReady() {
       tree.set_text(nodeId, tab.title);
       tree.set_icon(nodeId, correctFavIconUrl(tab.favIconUrl));
       var node = tree.get_node(nodeId);
-      console.log('Updating node', node)
+      console.log('Updating node', node);
       if (node) {
         node.original.url = tab.url;
       }
