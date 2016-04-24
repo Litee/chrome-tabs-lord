@@ -155,6 +155,12 @@ function onReady() {
     }
   );
 
+  jsTree.on('move_node.jstree', function(evt, data) {
+    console.log('Processing drop...', arguments);
+    var windowNode = tree.get_node(data.parent);
+    chrome.tabs.move(data.node.original.tabId, {windowId: windowNode.original.windowId, index: data.position});
+  });
+
   console.log('Parsing existing windows...');
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
     var state = loadState();
