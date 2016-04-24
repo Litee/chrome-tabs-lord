@@ -46,7 +46,7 @@ function onReady() {
     'contextmenu': {
       'items': generateContextMenu
     },
-    'plugins': ['dnd', 'contextmenu', 'stackedicon', "wholerow"]
+    'plugins': ['dnd', 'contextmenu', 'stackedicon', 'wholerow']
   });
 
   var tree = $('#tree-root').jstree(true);

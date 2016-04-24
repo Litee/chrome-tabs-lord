@@ -134,6 +134,8 @@
 }
 .vakata-context li {
   list-style: none;
+  max-width: 350;
+  text-overflow: ellipsis;
 }
 .vakata-context li > a {
   display: block;
