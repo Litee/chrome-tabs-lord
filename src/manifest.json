@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Tabs Lord",
   "description": "Extension for managing large number of tabs",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "icons": {
     "16": "images/tabs-lord-icon-16x16.png",
     "32": "images/tabs-lord-icon-32x32.png",
