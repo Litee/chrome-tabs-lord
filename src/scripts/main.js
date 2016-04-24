@@ -15,7 +15,7 @@ chrome.browserAction.onClicked.addListener(function() {
   function onWindowFocusChanged(windowId) {
     if (windowId !== chrome.windows.WINDOW_ID_NONE) {
       // TODO Scroll to active tab in tree
-      chrome.windows.get(windowId, {populate: true}, function(focusedWindow) {
+      chrome.windows.get(windowId, {}, function(focusedWindow) {
         console.log('Window focused', focusedWindow);
         if (focusedWindow.type === 'normal') {
           getOrCreateSidebarWindow(function(sidebarWindow) {
@@ -53,7 +53,11 @@ chrome.browserAction.onClicked.addListener(function() {
   }
 
 
+  var updatingWindowPosition = false;
   function updateWindowsPosition(sidebarWindow, currentWindow) {
+    if (updatingWindowPosition)
+      return;
+    updatingWindowPosition = true;
     console.log('Updating windows position', sidebarWindow, currentWindow);
     chrome.system.display.getInfo(function(displaysInfo) {
       console.log('Identifying monitor for window', currentWindow, displaysInfo);
@@ -71,33 +75,38 @@ chrome.browserAction.onClicked.addListener(function() {
         }
       }
       var bestDisplayInfo = displaysInfo[bestDisplay];
+      console.log('Best display', bestDisplayInfo, currentWindow.id);
       var workAreaLeft = bestDisplayInfo.workArea.left;
       var workAreaTop = bestDisplayInfo.workArea.top;
       var workAreaHeight = bestDisplayInfo.workArea.height;
       var workAreaWidth = bestDisplayInfo.workArea.width;
       chrome.windows.update(sidebarWindow.id, {
-        // focused: true,
+        focused: true,
         left: workAreaLeft,
         top: workAreaTop,
         width: 400,
         height: workAreaHeight
-      });
-      console.log('Best display', bestDisplayInfo, currentWindow.id);
-      chrome.windows.update(currentWindow.id, {left: workAreaLeft + 400, width: workAreaWidth - 400, top: workAreaTop, height: workAreaHeight});
-      /*var activatingSidebar = false;
-      chrome.windows.onFocusChanged.addListener(function(focusedWindowId) {
-        if (focusedWindowId >= 0 && focusedWindowId !== sidebarWindow.id && !activatingSidebar) {
-          console.log('Window focused', focusedWindowId);
-          chrome.windows.get(focusedWindowId, function() {
-            activatingSidebar = true;
-            chrome.windows.update(sidebarWindow.id, {focused: true}, function() {
-              chrome.windows.update(focusedWindowId, {focused: true}, function() {
-                activatingSidebar = false;
+      }, function() {
+        chrome.windows.update(currentWindow.id, {left: workAreaLeft + 400, width: workAreaWidth - 400, top: workAreaTop, height: workAreaHeight, focused: true}, function() {
+          setTimeout(function() {
+            updatingWindowPosition = false;
+          }, 500);
+        });
+        /*var activatingSidebar = false;
+        chrome.windows.onFocusChanged.addListener(function(focusedWindowId) {
+          if (focusedWindowId >= 0 && focusedWindowId !== sidebarWindow.id && !activatingSidebar) {
+            console.log('Window focused', focusedWindowId);
+            chrome.windows.get(focusedWindowId, function() {
+              activatingSidebar = true;
+              chrome.windows.update(sidebarWindow.id, {focused: true}, function() {
+                chrome.windows.update(focusedWindowId, {focused: true}, function() {
+                  activatingSidebar = false;
+                });
               });
             });
-          });
-        }
-      });*/
+          }
+        });*/
+      });
     });
   }
 });

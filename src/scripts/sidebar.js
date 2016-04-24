@@ -144,11 +144,16 @@ function onReady() {
 
   jsTree.on('select_node.jstree',
     function(evt, data) {
+      console.log('Node selected', evt, data);
       var nodeMeta = data.node.original;
       if (nodeMeta.tabId && data.selected.length === 1) {
         chrome.tabs.get(nodeMeta.tabId, function(tab) {
-          chrome.windows.update(tab.windowId, {focused: true}, function() {
-            chrome.tabs.update(tab.id, {active: true});
+          chrome.windows.get(tab.windowId, {}, function(window) {
+            var updateParameters = window.focused ? {} : {focused: true};
+            chrome.windows.update(tab.windowId, updateParameters, function() {
+              if (!tab.active)
+                chrome.tabs.update(tab.id, {active: true});
+            });
           });
         });
       }
@@ -287,7 +292,7 @@ function onReady() {
   function onTabActivated(activeInfo) {
     console.log('Tab activated', activeInfo);
     tree.deselect_all(true); // true to suppress selection event
-    tree.select_node('tab-' + activeInfo.tabId, true); // true to suppress selection event
+    tree.select_node('tab-' + activeInfo.tabId, false); // true to suppress selection event
     var nodeElement = $('li#tab-' + activeInfo.tabId);
     if (!nodeElement.visible()) {
       jQuery(document).scrollTop(nodeElement.offset().top);
