@@ -207,7 +207,6 @@ function onReady() {
 
   chrome.windows.onCreated.addListener(onWindowCreated);
   chrome.windows.onRemoved.addListener(onWindowRemoved);
-  // chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
   chrome.tabs.onCreated.addListener(onTabCreated);
   chrome.tabs.onRemoved.addListener(onTabRemoved);
   chrome.tabs.onUpdated.addListener(onTabUpdated);
@@ -230,19 +229,6 @@ function onReady() {
     tree.delete_node('window-' + windowId);
     saveState();
   }
-
-/*  function onWindowFocusChanged(windowId) {
-    console.log('Window focused', windowId);
-    if (windowId != chrome.windows.WINDOW_ID_NONE) {
-      // TODO Scroll to active tab in tree
-      chrome.windows.get(windowId, {populate: true}, function(window) {
-        $.each(window.tabs, function(i, tab) {
-          if (tab.active)
-          onTabActivated({tabId: tab.id});
-        });
-      });
-    }
-  }*/
 
   function onTabCreated(tab) {
     console.log('Tab created', tab);
