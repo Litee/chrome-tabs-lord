@@ -63,7 +63,12 @@ function onReady() {
         'rename-window-menu': {
           'label': 'Rename window',
           'action': function() {
-            tree.edit(node);
+            tree.edit(node, null, function(editedNode, nodeWasRenamed) {
+              console.log('Node editing has finished', editedNode, nodeWasRenamed);
+              if (nodeWasRenamed) {
+               saveState();
+              }
+            });
           }
         }
       });
@@ -126,31 +131,26 @@ function onReady() {
     }
   );
 
-/*  console.log('Loading persistent settings from local storage...');
-  var windowInfos = [];
-  for (int i = 0; i < localStorage.length; i++) {
-    var key = localStorage.key(i);
-    // TODO Think about better matching - quick and dirty now
-    if (key.indexOf('tabs-lord') === 0) { // ignoring unrelated items
-      if (key.indexOf('tabs-lord-window') === 0) {
-        var windowInfo = JSON.parse(localStorage.getItem(key));
-        console.log("Loaded information about window", windowInfo);
-        windowInfos.push(windowInfo);
-      }
-    }
-  }
-  console.log('Settings from local storage restored!');*/
   console.log('Parsing existing windows...');
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
+    var state = loadState();
     windowsArr.forEach(function(window) {
       console.log('Populating window', window);
       onWindowCreated(window);
       window.tabs.forEach(function(tab) {
         console.log('Populating tab', tab);
+        if (tab.index === 0) {
+          state.windows.forEach(function(windowInfo) {
+            if (windowInfo.firstTabUrl === tab.url) {
+              tree.set_text('window-' + window.id, windowInfo.windowName);
+            }
+          });
+        }
         onTabCreated(tab);
       });
     });
     console.log('Existing windows parsed!');
+    saveState();
   });
 
   var searchBox = $('.sidebar-search-box');
@@ -198,7 +198,7 @@ function onReady() {
   function onWindowRemoved(windowId) {
     console.log('Window removed', windowId);
     tree.delete_node('window-' + windowId);
-    // TODO Remove context menu item
+    saveState();
   }
 
   function onWindowFocusChanged(windowId) {
@@ -224,11 +224,13 @@ function onReady() {
       'icon': correctFavIconUrl(tab.favIconUrl),
       'url': tab.url
     }, tab.index);
+    saveState();
   }
 
   function onTabRemoved(tabId, removeInfo) {
     console.log('Tab removed', tabId, removeInfo);
     tree.delete_node('tab-' + tabId);
+    saveState();
   }
 
   function onTabUpdated(tabId, changeInfo) {
@@ -243,6 +245,7 @@ function onReady() {
       if (node) {
         node.original.url = tab.url;
       }
+      saveState();
     });
   }
 
@@ -256,11 +259,13 @@ function onReady() {
   function onTabMoved(tabId, moveInfo) {
     console.log('Tab moved', tabId, moveInfo);
     tree.move_node('tab-' + tabId, 'window-' + moveInfo.windowId, moveInfo.toIndex);
+    saveState();
   }
 
   function onTabAttached(tabId, attachInfo) {
     console.log('Tab attached', tabId, attachInfo);
     tree.move_node('tab-' + tabId, 'window-' + attachInfo.newWindowId, attachInfo.newPosition);
+    saveState();
   }
 
   function onTabActivated(activeInfo) {
@@ -273,13 +278,29 @@ function onReady() {
     }
   }
 
-}
-
-function guid() {
-  function s4() {
-    return Math.floor((1 + Math.random()) * 0x10000)
-      .toString(16)
-      .substring(1);
+  function loadState() {
+    var stateAsString = localStorage.getItem('tabs-lord-state');
+    if (stateAsString) {
+      return JSON.parse(stateAsString);
+    }
+    return {windows:[]};
   }
-  return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+
+  // TODO: Rethink when state should be saved - currently it is saved very often
+  function saveState() {
+    chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
+      var state = {windows:[]};
+      windowsArr.forEach(function(window) {
+        if (window.tabs.length > 0) {
+          var node = tree.get_node('window-' + window.id);
+          var windowInfo = {firstTabUrl: window.tabs[0].url, windowName: node.text};
+          state.windows.push(windowInfo);
+        } else {
+          console.log('Window doesn\'t have tabs - cannot save information about it', window);
+        }
+      });
+      console.log('Saving state', state);
+      localStorage.setItem('tabs-lord-state', JSON.stringify(state));
+    });
+  }
 }
