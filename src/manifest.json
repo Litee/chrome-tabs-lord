@@ -1,13 +1,15 @@
 {
   "manifest_version": 2,
   "name": "Tabs Lord",
-  "description": "Extension for managing large number of tabs",
-  "version": "0.1.6",
+  "default_locale": "en",
+  "description": "Chrome extension that shows vertical tabs in addition to standard horizontal ones.",
+  "version": "0.1.7",
   "icons": {
-    "16": "images/tabs-lord-icon-16x16.png",
-    "32": "images/tabs-lord-icon-32x32.png",
-    "48": "images/tabs-lord-icon-48x48.png",
-    "128": "images/tabs-lord-icon-128x128.png"
+    "16": "images/tabs-lord-icon-dark-16.png",
+    "32": "images/tabs-lord-icon-dark-32.png",
+    "48": "images/tabs-lord-icon-dark-48.png",
+    "128": "images/tabs-lord-icon-dark-128.png",
+    "256": "images/tabs-lord-icon-dark-256.png"
   },
   "background": {
     "scripts": [
@@ -15,8 +17,8 @@
     ]
   },
   "browser_action": {
-    "default_icon": "images/tabs-lord-icon-19x19.png",
-    "default_title": "Open Tabs Lord panel"
+    "default_icon": "images/tabs-lord-icon-16.png",
+    "default_title": "Open Sidebar"
   },
   "permissions": [
     "tabs",
