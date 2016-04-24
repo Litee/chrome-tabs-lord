@@ -10,10 +10,9 @@ Chrome browser extension for using vertical tabs IN ADDITION to existing horison
 
 ** Currently in alpha status, extension is published as private in Chrome Web Store. **
 
-I am using it for myself to identify issues. Largest gap so far is poor multi-monitor support. If you want to play with extension - let me know your Google e-mail so I can add you to the list of testers.
+I am using it for myself to identify issues. If you want to play with extension - let me know your Google e-mail so I can add you to the list of testers.
 
 # TODOs
 
-- Improve multi-monitor behavior
 - Allow to hibernate tabs manually and with timeout. Exclusions should be supported. Maybe different treatment of tabs that have not been used for a very long time.
 - Highlight duplicate tabs
