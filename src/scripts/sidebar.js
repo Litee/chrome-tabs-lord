@@ -12,22 +12,25 @@ function onReady() {
     _i.className = 'jstree-icon';
     _i.setAttribute('role', 'presentation');
 
-    $.jstree.plugins.tablordnodeicons = function(options, parent) {
+    $.jstree.plugins.tabLordNodeIcons = function(options, parent) {
       this.teardown = function() {
         this.element.find('.tabs-lord-icon').remove();
         parent.teardown.call(this);
       };
       this.redraw_node = function(obj) {
-        var nodeId = obj;
         obj = parent.redraw_node.apply(this, arguments);
         if (obj) {
-          if (nodeId && typeof nodeId === 'string' && nodeId.indexOf('tab-') === 0) {
+          var node = this._model.data[obj.id];
+          if (node && node.original && node.original.tabId !== undefined) {
             var liEl = $(obj);
             if (liEl.find('i.tabs-lord-close-icon').length === 0) {
               var closeIconEl = $('<i class="tabs-lord-icon tabs-lord-icon-close"></i>').click(function() {
-                chrome.tabs.remove(parseInt(nodeId.substring(4)));
+                chrome.tabs.remove(node.original.tabId);
               });
               liEl.append(closeIconEl);
+            }
+            if (node.original.url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg') === 0) {
+              liEl.find('a.jstree-anchor').css('color', '#C0C0C0').css('font-style', 'italic');
             }
           }
         }
@@ -49,7 +52,7 @@ function onReady() {
         'dots': false
       }
     },
-    'plugins': ['dnd', 'contextmenu', 'tablordnodeicons', 'wholerow'],
+    'plugins': ['dnd', 'contextmenu', 'tabLordNodeIcons', 'wholerow'],
     'contextmenu': {
       'items': generateContextMenu
     },
