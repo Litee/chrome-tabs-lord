@@ -40,7 +40,7 @@ function onReady() {
     'core': {
       'check_callback': function(operation, node, node_parent, node_position, more) {
         if (operation === 'move_node') {
-          console.log(arguments);
+          // console.log(arguments);
           return node_parent && node_parent.original && !node_parent.original.tabId;
         }
         return true;
@@ -62,6 +62,15 @@ function onReady() {
 
   var tree = $('#tree-root').jstree(true);
 
+  jsTree.off('dblclick').on('dblclick','.jstree-anchor', function() {
+    console.log(arguments);
+    var node = tree.get_node(this);
+    console.log(node);
+    if (node.original && !node.original.tabId) {
+      editWindowName(node);
+    }
+  });
+
   function generateContextMenu(contextMenuNode, callback) {
     console.log('Creating context menu', contextMenuNode);
     var selectedNodes = tree.get_selected(true); // return full nodes
@@ -74,12 +83,7 @@ function onReady() {
         'rename-window-menu': {
           'label': 'Rename window',
           'action': function() {
-            tree.edit(contextMenuNode, null, function(editedNode, nodeWasRenamed) {
-              console.log('Node editing has finished', editedNode, nodeWasRenamed);
-              if (nodeWasRenamed) {
-                saveState();
-              }
-            });
+            editWindowName(contextMenuNode);
           }
         }
       });
@@ -126,6 +130,15 @@ function onReady() {
           'submenu': moveToWindowActions
         }
       });
+    });
+  }
+
+  function editWindowName(node) {
+    tree.edit(node, null, function(editedNode, nodeWasRenamed) {
+      console.log('Node editing has finished', editedNode, nodeWasRenamed);
+      if (nodeWasRenamed) {
+        saveState();
+      }
     });
   }
 
@@ -188,7 +201,7 @@ function onReady() {
 
   chrome.windows.onCreated.addListener(onWindowCreated);
   chrome.windows.onRemoved.addListener(onWindowRemoved);
-  chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
+  // chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
   chrome.tabs.onCreated.addListener(onTabCreated);
   chrome.tabs.onRemoved.addListener(onTabRemoved);
   chrome.tabs.onUpdated.addListener(onTabUpdated);
@@ -212,9 +225,9 @@ function onReady() {
     saveState();
   }
 
-  function onWindowFocusChanged(windowId) {
+/*  function onWindowFocusChanged(windowId) {
     console.log('Window focused', windowId);
-/*    if (windowId != chrome.windows.WINDOW_ID_NONE) {
+    if (windowId != chrome.windows.WINDOW_ID_NONE) {
       // TODO Scroll to active tab in tree
       chrome.windows.get(windowId, {populate: true}, function(window) {
         $.each(window.tabs, function(i, tab) {
@@ -222,8 +235,8 @@ function onReady() {
           onTabActivated({tabId: tab.id});
         });
       });
-    }*/
-  }
+    }
+  }*/
 
   function onTabCreated(tab) {
     console.log('Tab created', tab);
