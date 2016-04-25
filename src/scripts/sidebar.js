@@ -7,9 +7,8 @@ function onReady() {
 
   var jsTree = $('#tree-root').jstree({
     'core': {
-      'check_callback': function(operation, node, node_parent, node_position, more) {
+      'check_callback': function(operation, node, node_parent) {
         if (operation === 'move_node') {
-          // log(arguments);
           return node_parent && node_parent.original && !node_parent.original.tabId;
         }
         return true;
@@ -40,15 +39,6 @@ function onReady() {
 
   var tree = $('#tree-root').jstree(true);
 
-  jsTree.off('dblclick').on('dblclick','.jstree-anchor', function() {
-    log(arguments);
-    var node = tree.get_node(this);
-    log(node);
-    if (node.original && !node.original.tabId) {
-      editWindowName(node);
-    }
-  });
-
   function generateContextMenu(contextMenuNode, callback) {
     log('Creating context menu', contextMenuNode);
     var selectedNodes = tree.get_selected(true); // return full nodes
@@ -57,14 +47,6 @@ function onReady() {
     }
     selectedNodes = selectedNodes.filter(function(n) { return n.original.tabId; });
     if (selectedNodes.length === 0) {
-      callback({
-        'rename-window-menu': {
-          'label': 'Rename window',
-          'action': function() {
-            editWindowName(contextMenuNode);
-          }
-        }
-      });
       return; // Only window nodes are selected
     }
     chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windows) {
@@ -111,15 +93,6 @@ function onReady() {
     });
   }
 
-  function editWindowName(node) {
-    tree.edit(node, null, function(editedNode, nodeWasRenamed) {
-      log('Node editing has finished', editedNode, nodeWasRenamed);
-      if (nodeWasRenamed) {
-        saveState();
-      }
-    });
-  }
-
   jsTree.on('select_node.jstree',
     function(evt, data) {
       log('Node selected', evt, data);
@@ -146,24 +119,17 @@ function onReady() {
 
   log('Parsing existing windows...');
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
-    var state = loadState();
+    // var state = loadState();
     windowsArr.forEach(function(window) {
       log('Populating window', window);
       onWindowCreated(window);
       window.tabs.forEach(function(tab) {
         log('Populating tab', tab);
-        if (tab.index === 0) {
-          state.windows.forEach(function(windowInfo) {
-            if (windowInfo.firstTabUrl === tab.url) {
-              tree.set_text('window-' + window.id, windowInfo.windowName);
-            }
-          });
-        }
         onTabCreated(tab);
       });
     });
     log('Existing windows parsed!');
-    saveState();
+    stateUpdated();
   });
 
   var searchBox = $('.sidebar-search-box');
@@ -195,7 +161,7 @@ function onReady() {
   function onWindowRemoved(windowId) {
     log('Window removed', windowId);
     tree.delete_node('window-' + windowId);
-    saveState();
+    stateUpdated();
   }
 
   function onTabCreated(tab) {
@@ -208,13 +174,13 @@ function onReady() {
       'icon': correctFavIconUrl(tab.favIconUrl),
       'url': tab.url
     }, tab.index);
-    saveState();
+    stateUpdated();
   }
 
   function onTabRemoved(tabId, removeInfo) {
     log('Tab removed', tabId, removeInfo);
     tree.delete_node('tab-' + tabId);
-    saveState();
+    stateUpdated();
   }
 
   function onTabUpdated(tabId, changeInfo) {
@@ -229,7 +195,7 @@ function onReady() {
       if (node) {
         node.original.url = tab.url;
       }
-      saveState();
+      stateUpdated();
     });
   }
 
@@ -243,13 +209,13 @@ function onReady() {
   function onTabMoved(tabId, moveInfo) {
     log('Tab moved', tabId, moveInfo);
     tree.move_node('tab-' + tabId, 'window-' + moveInfo.windowId, moveInfo.toIndex);
-    saveState();
+    stateUpdated();
   }
 
   function onTabAttached(tabId, attachInfo) {
     log('Tab attached', tabId, attachInfo);
     tree.move_node('tab-' + tabId, 'window-' + attachInfo.newWindowId, attachInfo.newPosition);
-    saveState();
+    stateUpdated();
   }
 
   function onTabActivated(activeInfo) {
@@ -262,42 +228,25 @@ function onReady() {
     }
   }
 
-  function loadState() {
-    var stateAsString = localStorage.getItem('tabs-lord-state');
-    if (stateAsString) {
-      return JSON.parse(stateAsString);
+  var stateUpdatedTimer = null;
+  function stateUpdated() {
+    if (stateUpdatedTimer) {
+      clearTimeout(stateUpdatedTimer);
     }
-    return {windows:[]};
-  }
-
-  var saveStateTimer = null;
-
-  function saveState() {
-    clearTimeout(saveStateTimer);
-    saveStateTimer = setTimeout(function() {
-      log('Saving state...');
-      chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
-        var state = {windows:[]};
-        windowsArr.forEach(function(window) {
-          if (window.tabs.length > 0) {
-            var node = tree.get_node('window-' + window.id);
-            var windowInfo = {firstTabUrl: window.tabs[0].url, windowName: node.text};
-            state.windows.push(windowInfo);
-          } else {
-            log('Window doesn\'t have tabs - cannot save information about it', window);
-          }
-        });
-        var newState = JSON.stringify(state);
-        localStorage.setItem('tabs-lord-state', newState);
-        log('State saved!', state);
-      });
-
+    stateUpdatedTimer = setTimeout(function() {
+      log('Processing tabs');
       var tabsGroupedByUrl = {};
       $.each(tree._model.data, function(k, node) {
-        if (node && node.original && node.original.url) {
-          var nodeUrl = formatUrlForDuplicatesCheck(node.original.url, '#');
-          tabsGroupedByUrl[nodeUrl] = tabsGroupedByUrl[nodeUrl] || [];
-          tabsGroupedByUrl[nodeUrl].push(node);
+        if (node && node.original) {
+          if (node.original.url) {
+            var nodeUrl = formatUrlForDuplicatesCheck(node.original.url, '#');
+            tabsGroupedByUrl[nodeUrl] = tabsGroupedByUrl[nodeUrl] || [];
+            tabsGroupedByUrl[nodeUrl].push(node);
+          }
+          else if (node.original.tabId === undefined) {
+            node.text = 'Window (' + node.children.length + ')';
+            tree.redraw_node(node);
+          }
         }
       });
       $.each(tabsGroupedByUrl, function(url, nodes) {
@@ -314,7 +263,7 @@ function onReady() {
           }
         });
       });
-    }, 1000);
+    }, 500);
   }
 
   function formatUrlForDuplicatesCheck(url) {
