@@ -141,6 +141,7 @@ function onReady() {
 
   chrome.windows.onCreated.addListener(onWindowCreated);
   chrome.windows.onRemoved.addListener(onWindowRemoved);
+  chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
   chrome.tabs.onCreated.addListener(onTabCreated);
   chrome.tabs.onRemoved.addListener(onTabRemoved);
   chrome.tabs.onUpdated.addListener(onTabUpdated);
@@ -162,6 +163,17 @@ function onReady() {
     log('Window removed', windowId);
     tree.delete_node('window-' + windowId);
     stateUpdated();
+  }
+
+  function onWindowFocusChanged(windowId) {
+    if (windowId !== -1) {
+      chrome.windows.get(windowId, {populate:true}, function(window) {
+        var activeTab = window.tabs.find(function(tab) {
+          return tab.active;
+        });
+        onTabActivated({tabId: activeTab.id, windowId: activeTab.windowId});
+      });
+    }
   }
 
   function onTabCreated(tab) {

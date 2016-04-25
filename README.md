@@ -15,4 +15,14 @@ I am using it for myself to identify issues. If you want to play with extension 
 # TODOs
 
 - Allow to hibernate tabs manually and with timeout. Exclusions should be supported. Maybe different treatment of tabs that have not been used for a very long time.
-- Highlight duplicate tabs
+- “Loading” status for sidebar initiation
+- Allow to change sidebar width, remember the preference
+- Mass close – window, selected tabs
+- Weird jumps after closing a tab
+- Hide window after the only tab is closed in search view
+- Move sidebar when window moved to another monitor
+- Alt-Q on focused Sidebar window works weird
+- Sidebar is captured into browser history
+- Activate window on Sidebar activation
+- # of total tabs in main extension icon
+- Update sidebar in batches to avoid “hanging extension” issues with huge number of tabs
