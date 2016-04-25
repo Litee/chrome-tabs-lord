@@ -100,13 +100,13 @@ function onReady() {
       if (nodeMeta.tabId && data.selected.length === 1) {
         chrome.tabs.get(nodeMeta.tabId, function(tab) {
           chrome.windows.get(tab.windowId, {}, function(window) {
-            var updateParameters = window.focused ? {} : {focused: true};
-            chrome.windows.update(tab.windowId, updateParameters, function() {
-              if (!tab.active) {
-                log('Activating tab because node was selected', nodeMeta, tab);
-                chrome.tabs.update(tab.id, {active: true});
-              }
-            });
+            if (!tab.active) {
+              log('Activating tab because node was selected', nodeMeta, tab);
+              chrome.tabs.update(tab.id, {active: true});
+            }
+            if (!window.focused) {
+              chrome.windows.update(tab.windowId, {focused: true});
+            }
           });
         });
       }
@@ -168,12 +168,16 @@ function onReady() {
   }
 
   function onWindowFocusChanged(windowId) {
-    if (windowId !== -1) {
+    if (windowId === -1) {
+      log('Windows lost focus');
+    }
+    else {
       chrome.windows.get(windowId, {populate:true}, function(window) {
         if (window.type === 'normal') {
           var activeTab = window.tabs.find(function(tab) {
             return tab.active;
           });
+          // TODO Too many activation - think how to optimize
           if (activeTab) {
             log('Activating tab because window was focused', window, activeTab);
             onTabActivated({tabId: activeTab.id, windowId: activeTab.windowId});
@@ -242,8 +246,14 @@ function onReady() {
     var selectedNodeId = 'tab-' + activeInfo.tabId;
     var allSelectedNodeIds = tree.get_selected();
     var nodeIdsToDeselect = allSelectedNodeIds.filter(function(someNodeId) { return someNodeId !== selectedNodeId; });
-    tree.deselect_node(nodeIdsToDeselect);
-    tree.select_node(selectedNodeId);
+    if (nodeIdsToDeselect.length > 0) {
+      log('Deselecting nodes', nodeIdsToDeselect);
+      tree.deselect_node(nodeIdsToDeselect);
+    }
+    if (nodeIdsToDeselect.length === allSelectedNodeIds.length) {
+      log('Selecting non-selected node', selectedNodeId);
+      tree.select_node(selectedNodeId);
+    }
     var nodeElement = $('li#tab-' + activeInfo.tabId);
     if (!nodeElement.visible()) {
       var offset = nodeElement.offset();
