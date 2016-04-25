@@ -3,7 +3,8 @@
     "$": true,
     "console": true,
     "chrome": true,
-    "jQuery": true
+    "jQuery": true,
+    "log": true
   },
   "rules": {
     "indent": [

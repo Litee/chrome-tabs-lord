@@ -3,13 +3,13 @@
 $(document).ready(onReady);
 
 function onReady() {
-  console.log('Sidebar view loaded! Reading information about existing windows...');
+  log('Sidebar view loaded! Reading information about existing windows...');
 
   var jsTree = $('#tree-root').jstree({
     'core': {
       'check_callback': function(operation, node, node_parent, node_position, more) {
         if (operation === 'move_node') {
-          // console.log(arguments);
+          // log(arguments);
           return node_parent && node_parent.original && !node_parent.original.tabId;
         }
         return true;
@@ -18,7 +18,7 @@ function onReady() {
         'dots': false
       }
     },
-    'plugins': ['dnd', 'contextmenu', 'tabLordNodeIcons', 'wholerow'],
+    'plugins': ['dnd', 'contextmenu', 'tabLordNodeIcons', 'wholerow', 'search'],
     'contextmenu': {
       'items': generateContextMenu
     },
@@ -26,22 +26,31 @@ function onReady() {
       'is_draggable': function(nodes) {
         return nodes.every(function(node) { return node.original && node.original.tabId; });
       }
+    },
+    'search': {
+      'show_only_matches': true,
+      'search_callback': searchNode
     }
   });
+
+  function searchNode(searchText, node) {
+    var nodeText = node.text;
+    return nodeText && (nodeText.toLowerCase().indexOf(searchText) > -1 || (node.original && node.original.url && node.original.url.toLowerCase().indexOf(searchText) > -1));
+  }
 
   var tree = $('#tree-root').jstree(true);
 
   jsTree.off('dblclick').on('dblclick','.jstree-anchor', function() {
-    console.log(arguments);
+    log(arguments);
     var node = tree.get_node(this);
-    console.log(node);
+    log(node);
     if (node.original && !node.original.tabId) {
       editWindowName(node);
     }
   });
 
   function generateContextMenu(contextMenuNode, callback) {
-    console.log('Creating context menu', contextMenuNode);
+    log('Creating context menu', contextMenuNode);
     var selectedNodes = tree.get_selected(true); // return full nodes
     if (selectedNodes.length === 0) {
       selectedNodes.push(contextMenuNode);
@@ -66,7 +75,7 @@ function onReady() {
         moveToWindowActions['move-to-window-menu-' + window.id] = {
           'label': menuLabel,
           'action': function() {
-            console.log('Moving tab(s) to another window', selectedNodes, window.id);
+            log('Moving tab(s) to another window', selectedNodes, window.id);
             chrome.tabs.move(selectedNodes.map(function(node) { return node.original.tabId; }), {windowId: window.id, index: -1});
           }
         };
@@ -74,8 +83,8 @@ function onReady() {
       moveToWindowActions['move-to-window-menu-new'] = {
         'label': 'New Window',
         'action': function() {
-          console.log('Moving tab(s) to a new window', selectedNodes);
-          console.log('First tab to move', selectedNodes[0]);
+          log('Moving tab(s) to a new window', selectedNodes);
+          log('First tab to move', selectedNodes[0]);
           chrome.windows.create(
             {
               type: 'normal',
@@ -104,7 +113,7 @@ function onReady() {
 
   function editWindowName(node) {
     tree.edit(node, null, function(editedNode, nodeWasRenamed) {
-      console.log('Node editing has finished', editedNode, nodeWasRenamed);
+      log('Node editing has finished', editedNode, nodeWasRenamed);
       if (nodeWasRenamed) {
         saveState();
       }
@@ -113,7 +122,7 @@ function onReady() {
 
   jsTree.on('select_node.jstree',
     function(evt, data) {
-      console.log('Node selected', evt, data);
+      log('Node selected', evt, data);
       var nodeMeta = data.node.original;
       if (nodeMeta.tabId && data.selected.length === 1) {
         chrome.tabs.get(nodeMeta.tabId, function(tab) {
@@ -130,19 +139,19 @@ function onReady() {
   );
 
   jsTree.on('move_node.jstree', function(evt, data) {
-    console.log('Processing drop...', arguments);
+    log('Processing drop...', arguments);
     var windowNode = tree.get_node(data.parent);
     chrome.tabs.move(data.node.original.tabId, {windowId: windowNode.original.windowId, index: data.position});
   });
 
-  console.log('Parsing existing windows...');
+  log('Parsing existing windows...');
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
     var state = loadState();
     windowsArr.forEach(function(window) {
-      console.log('Populating window', window);
+      log('Populating window', window);
       onWindowCreated(window);
       window.tabs.forEach(function(tab) {
-        console.log('Populating tab', tab);
+        log('Populating tab', tab);
         if (tab.index === 0) {
           state.windows.forEach(function(windowInfo) {
             if (windowInfo.firstTabUrl === tab.url) {
@@ -153,30 +162,15 @@ function onReady() {
         onTabCreated(tab);
       });
     });
-    console.log('Existing windows parsed!');
+    log('Existing windows parsed!');
     saveState();
   });
 
   var searchBox = $('.sidebar-search-box');
   searchBox.on('input', function() {
+    log('Search text changed', searchBox.val());
     var searchText = searchBox.val().toLowerCase();
-    console.log('Search text changed', searchBox.val());
-    if (searchText.length === 0) {
-      tree.show_all();
-    } else {
-      // hide nodes that do not match query
-      tree.hide_all();
-      $.each(tree._model.data, function(key, node) {
-        var nodeText = node.text;
-        if (nodeText && (nodeText.toLowerCase().indexOf(searchText) > -1 || (node.original && node.original.url && node.original.url.toLowerCase().indexOf(searchText) > -1))) {
-          var currentNodeId = node.id;
-          while (currentNodeId) {
-            tree.show_node(currentNodeId);
-            currentNodeId = tree.get_parent(currentNodeId);
-          }
-        }
-      });
-    }
+    tree.search(searchText);
   });
 
   chrome.windows.onCreated.addListener(onWindowCreated);
@@ -189,7 +183,7 @@ function onReady() {
   chrome.tabs.onActivated.addListener(onTabActivated);
 
   function onWindowCreated(window) {
-    console.log('Window created', window);
+    log('Window created', window);
     tree.create_node(null, {
       'id': 'window-' + window.id,
       'text': 'Window',
@@ -199,13 +193,13 @@ function onReady() {
   }
 
   function onWindowRemoved(windowId) {
-    console.log('Window removed', windowId);
+    log('Window removed', windowId);
     tree.delete_node('window-' + windowId);
     saveState();
   }
 
   function onTabCreated(tab) {
-    console.log('Tab created', tab);
+    log('Tab created', tab);
     tree.create_node('window-' + tab.windowId, {
       'id': 'tab-' + tab.id,
       'text': tab.title,
@@ -218,20 +212,20 @@ function onReady() {
   }
 
   function onTabRemoved(tabId, removeInfo) {
-    console.log('Tab removed', tabId, removeInfo);
+    log('Tab removed', tabId, removeInfo);
     tree.delete_node('tab-' + tabId);
     saveState();
   }
 
   function onTabUpdated(tabId, changeInfo) {
-    console.log('Tab updated', tabId, changeInfo);
+    log('Tab updated', tabId, changeInfo);
     // TODO rethink - could be too much overhead
     chrome.tabs.get(tabId, function(tab) {
       var nodeId = 'tab-' + tabId;
       tree.set_text(nodeId, tab.title);
       tree.set_icon(nodeId, correctFavIconUrl(tab.favIconUrl));
       var node = tree.get_node(nodeId);
-      console.log('Updating node', node);
+      log('Updating node', node);
       if (node) {
         node.original.url = tab.url;
       }
@@ -247,19 +241,19 @@ function onReady() {
   }
 
   function onTabMoved(tabId, moveInfo) {
-    console.log('Tab moved', tabId, moveInfo);
+    log('Tab moved', tabId, moveInfo);
     tree.move_node('tab-' + tabId, 'window-' + moveInfo.windowId, moveInfo.toIndex);
     saveState();
   }
 
   function onTabAttached(tabId, attachInfo) {
-    console.log('Tab attached', tabId, attachInfo);
+    log('Tab attached', tabId, attachInfo);
     tree.move_node('tab-' + tabId, 'window-' + attachInfo.newWindowId, attachInfo.newPosition);
     saveState();
   }
 
   function onTabActivated(activeInfo) {
-    console.log('Tab activated', activeInfo);
+    log('Tab activated', activeInfo);
     tree.deselect_all(true); // true to suppress selection event
     tree.select_node('tab-' + activeInfo.tabId, false); // true to suppress selection event
     var nodeElement = $('li#tab-' + activeInfo.tabId);
@@ -281,7 +275,7 @@ function onReady() {
   function saveState() {
     clearTimeout(saveStateTimer);
     saveStateTimer = setTimeout(function() {
-      console.log('Saving state...');
+      log('Saving state...');
       chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
         var state = {windows:[]};
         windowsArr.forEach(function(window) {
@@ -290,12 +284,12 @@ function onReady() {
             var windowInfo = {firstTabUrl: window.tabs[0].url, windowName: node.text};
             state.windows.push(windowInfo);
           } else {
-            console.log('Window doesn\'t have tabs - cannot save information about it', window);
+            log('Window doesn\'t have tabs - cannot save information about it', window);
           }
         });
         var newState = JSON.stringify(state);
         localStorage.setItem('tabs-lord-state', newState);
-        console.log('State saved!', state);
+        log('State saved!', state);
       });
 
       var tabsGroupedByUrl = {};
@@ -309,7 +303,7 @@ function onReady() {
       $.each(tabsGroupedByUrl, function(url, nodes) {
         nodes.forEach(function(node) {
           if (nodes.length > 1) { // duplicate URLs
-            console.log('Duplicate node found', node);
+            log('Duplicate node found', node);
             node.original.duplicate = true;
             tree.redraw_node(node);
 

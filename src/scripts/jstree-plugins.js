@@ -24,7 +24,7 @@
             }
             // Mark suspended tabs with gray font colour
             if (node.original.url && node.original.url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg') === 0) {
-              console.log('Hibernated tab found', node);
+              log('Hibernated tab found', node);
               liEl.find('a.jstree-anchor').css('color', '#C0C0C0').css('font-style', 'italic');
             }
             if (node.original.duplicate) {

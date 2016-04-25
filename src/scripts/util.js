@@ -6,3 +6,10 @@ function guid() {
   }
   return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
+
+var LOG = false;
+function log() {
+  if (LOG) {
+    console.log.apply(console, arguments);
+  }
+}
