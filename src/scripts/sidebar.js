@@ -102,8 +102,10 @@ function onReady() {
           chrome.windows.get(tab.windowId, {}, function(window) {
             var updateParameters = window.focused ? {} : {focused: true};
             chrome.windows.update(tab.windowId, updateParameters, function() {
-              if (!tab.active)
+              if (!tab.active) {
+                log('Activating tab because node was selected', nodeMeta, tab);
                 chrome.tabs.update(tab.id, {active: true});
+              }
             });
           });
         });
@@ -168,10 +170,15 @@ function onReady() {
   function onWindowFocusChanged(windowId) {
     if (windowId !== -1) {
       chrome.windows.get(windowId, {populate:true}, function(window) {
-        var activeTab = window.tabs.find(function(tab) {
-          return tab.active;
-        });
-        onTabActivated({tabId: activeTab.id, windowId: activeTab.windowId});
+        if (window.type === 'normal') {
+          var activeTab = window.tabs.find(function(tab) {
+            return tab.active;
+          });
+          if (activeTab) {
+            log('Activating tab because window was focused', window, activeTab);
+            onTabActivated({tabId: activeTab.id, windowId: activeTab.windowId});
+          }
+        }
       });
     }
   }
@@ -232,11 +239,17 @@ function onReady() {
 
   function onTabActivated(activeInfo) {
     log('Tab activated', activeInfo);
-    tree.deselect_all(true); // true to suppress selection event
-    tree.select_node('tab-' + activeInfo.tabId, false); // true to suppress selection event
+    var selectedNodeId = 'tab-' + activeInfo.tabId;
+    var allSelectedNodeIds = tree.get_selected();
+    var nodeIdsToDeselect = allSelectedNodeIds.filter(function(someNodeId) { return someNodeId !== selectedNodeId; });
+    tree.deselect_node(nodeIdsToDeselect);
+    tree.select_node(selectedNodeId);
     var nodeElement = $('li#tab-' + activeInfo.tabId);
     if (!nodeElement.visible()) {
-      jQuery(document).scrollTop(nodeElement.offset().top);
+      var offset = nodeElement.offset();
+      if (offset) {
+        jQuery(document).scrollTop(nodeElement.offset().top - 25);
+      }
     }
   }
 
