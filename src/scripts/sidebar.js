@@ -5,40 +5,6 @@ $(document).ready(onReady);
 function onReady() {
   console.log('Sidebar view loaded! Reading information about existing windows...');
 
-  (function($) {
-    var _s = document.createElement('SPAN');
-    _s.className = 'fa-stack jstree-stackedicon';
-    var _i = document.createElement('I');
-    _i.className = 'jstree-icon';
-    _i.setAttribute('role', 'presentation');
-
-    $.jstree.plugins.tabLordNodeIcons = function(options, parent) {
-      this.teardown = function() {
-        this.element.find('.tabs-lord-icon').remove();
-        parent.teardown.call(this);
-      };
-      this.redraw_node = function(obj) {
-        obj = parent.redraw_node.apply(this, arguments);
-        if (obj) {
-          var node = this._model.data[obj.id];
-          if (node && node.original && node.original.tabId !== undefined) {
-            var liEl = $(obj);
-            if (liEl.find('i.tabs-lord-close-icon').length === 0) {
-              var closeIconEl = $('<i class="tabs-lord-icon tabs-lord-icon-close"></i>').click(function() {
-                chrome.tabs.remove(node.original.tabId);
-              });
-              liEl.append(closeIconEl);
-            }
-            if (node.original.url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg') === 0) {
-              liEl.find('a.jstree-anchor').css('color', '#C0C0C0').css('font-style', 'italic');
-            }
-          }
-        }
-        return obj;
-      };
-    };
-  })(jQuery);
-
   var jsTree = $('#tree-root').jstree({
     'core': {
       'check_callback': function(operation, node, node_parent, node_position, more) {
@@ -311,6 +277,7 @@ function onReady() {
   }
 
   var saveStateTimer = null;
+
   function saveState() {
     clearTimeout(saveStateTimer);
     saveStateTimer = setTimeout(function() {
@@ -330,6 +297,52 @@ function onReady() {
         localStorage.setItem('tabs-lord-state', newState);
         console.log('State saved!', state);
       });
+
+      var tabsGroupedByUrl = {};
+      $.each(tree._model.data, function(k, node) {
+        if (node && node.original && node.original.url) {
+          var nodeUrl = formatUrlForDuplicatesCheck(node.original.url, '#');
+          tabsGroupedByUrl[nodeUrl] = tabsGroupedByUrl[nodeUrl] || [];
+          tabsGroupedByUrl[nodeUrl].push(node);
+        }
+      });
+      $.each(tabsGroupedByUrl, function(url, nodes) {
+        nodes.forEach(function(node) {
+          if (nodes.length > 1) { // duplicate URLs
+            console.log('Duplicate node found', node);
+            node.original.duplicate = true;
+            tree.redraw_node(node);
+
+          }
+          else { // unique URLs
+            node.original.duplicate = false;
+            tree.redraw_node(node);
+          }
+        });
+      });
     }, 1000);
+  }
+
+  function formatUrlForDuplicatesCheck(url) {
+    if (url) {
+      var pos = url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=');
+      if (pos === 0) {
+        url = url.substring(71);
+      }
+      pos = url.indexOf('#');
+      if (pos >= 0) {
+        url = url.substring(0, pos);
+      }
+      pos = url.indexOf('http://');
+      if (pos === 0) {
+        url = url.substring(7);
+      }
+      pos = url.indexOf('https://');
+      if (pos === 0) {
+        url = url.substring(8);
+      }
+      return url;
+    }
+    return null;
   }
 }
