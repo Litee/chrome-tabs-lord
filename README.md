@@ -25,4 +25,5 @@ I am using it for myself to identify issues. If you want to play with extension 
 - Sidebar is captured into browser history
 - Activate window on Sidebar activation
 - # of total tabs in main extension icon
-- Update sidebar in batches to avoid “hanging extension” issues with huge number of tabs
+- Update sidebar in batches to avoid "hanging extension" issues with huge number of tabs
+- Visual feedback on tab loading - e.g. rotating icon

@@ -1,7 +1,6 @@
 {
   "globals": {
     "$": true,
-    "console": true,
     "chrome": true,
     "jQuery": true,
     "log": true
