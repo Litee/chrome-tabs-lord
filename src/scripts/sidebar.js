@@ -121,14 +121,15 @@ function onReady() {
 
   log('Parsing existing windows...');
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
-    // var state = loadState();
     windowsArr.forEach(function(window) {
-      log('Populating window', window);
-      onWindowCreated(window);
-      window.tabs.forEach(function(tab) {
-        log('Populating tab', tab);
-        onTabCreated(tab);
-      });
+      setTimeout(function() {
+        log('Populating window', window);
+        onWindowCreated(window);
+        window.tabs.forEach(function(tab) {
+          log('Populating tab', tab);
+          onTabCreated(tab);
+        });
+      }, 1);
     });
     log('Existing windows parsed!');
     stateUpdated();
