@@ -128,11 +128,14 @@
     },
 
     addWindow: function(windowId, text) {
-      var windowEl = _templateWindowNode.cloneNode(true);
-      windowEl.id = 'sidebar-win-' + windowId;
-      windowEl.children[1].appendChild(document.createTextNode(text));
-      this._root.appendChild(windowEl);
-      this._model.windows[windowId] = {windowId: windowId, text: text};
+      if (!this._model.windows.has(windowId)) {
+        var windowEl = _templateWindowNode.cloneNode(true);
+        windowEl.id = 'sidebar-win-' + windowId;
+        windowEl.children[1].textContent = text + '(1)';
+        this._root.appendChild(windowEl);
+        this._model.windows.set(windowId, {windowId: windowId, text: text});
+        this._detectDuplicates();
+      }
     },
 
     removeWindow: function(windowId) {
@@ -142,14 +145,14 @@
       }
       var tabIdsToDelete = this._getTabIdsForWindow(windowId);
       tabIdsToDelete.forEach(tabId => {
-   		delete this._model.tabs[tabId];
+        this._model.tabs.delete(tabId);
       });
-      delete this._model.window[windowId];
+      this._model.window.delete(windowId);
     },
 
     addTab: function(windowId, tabId, pos, text, icon, url) {
-      var windowModel = this._model.windows[windowId];
-      if (windowModel) {
+      if (this._model.windows.has(windowId)) {
+        var windowModel = this._model.windows.get(windowId);
         var windowElement = this._getWindowElement(windowId);
         var tabElement = _templateTabNode.cloneNode(true);
         tabElement.id = 'sidebar-tab-' + tabId;
@@ -174,6 +177,10 @@
       	var tabElement = this._getTabElement(tabId);
       	tabElement.remove();
       }
+      var tabIdsForWindow = this._getTabIdsForWindow(tabModel.windowId);
+      var windowElement = this._getWindowElement(tabModel.windowId);
+      var windowModel = this._model.windows.get(tabModel.windowId);
+      windowElement.children[1].textContent = windowModel.text + ' (' + tabIdsForWindow.length + ')';
       this._detectDuplicates();
     },
 
