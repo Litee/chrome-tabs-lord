@@ -7,7 +7,7 @@ function guid() {
   return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
 
-var LOG = false;
+var LOG = true;
 function log() {
   if (LOG) {
     console.log.apply(console, arguments);

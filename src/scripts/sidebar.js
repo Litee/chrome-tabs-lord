@@ -5,6 +5,8 @@ $(document).ready(onReady);
 function onReady() {
   log('Sidebar view loaded! Reading information about existing windows...');
 
+  var sidebar = $('#sidebar-nodes-container').sidebar();
+
   var jsTree = $('#tree-root').jstree({
     'core': {
       'check_callback': function(operation, node, node_parent) {
@@ -132,7 +134,6 @@ function onReady() {
       }, 1);
     });
     log('Existing windows parsed!');
-    stateUpdated();
   });
 
   var searchBox = $('.sidebar-search-box');
@@ -154,17 +155,12 @@ function onReady() {
 
   function onWindowCreated(window) {
     log('Window created', window);
-    tree.create_node(null, {
-      'id': 'window-' + window.id,
-      'text': 'Window',
-      'windowId': window.id,
-      'state': {'opened': true}
-    });
+    sidebar.addWindow(window.id, 'Window');
   }
 
   function onWindowRemoved(windowId) {
     log('Window removed', windowId);
-    tree.delete_node('window-' + windowId);
+    sidebar.removeWindow(windowId);
     stateUpdated();
   }
 
@@ -190,15 +186,7 @@ function onReady() {
 
   function onTabCreated(tab) {
     log('Tab created', tab);
-    tree.create_node('window-' + tab.windowId, {
-      'id': 'tab-' + tab.id,
-      'text': tab.title,
-      'tabId': tab.id,
-      //'parentWindowId': tab.windowId,
-      'icon': correctFavIconUrl(tab.favIconUrl),
-      'url': tab.url
-    }, tab.index);
-    stateUpdated();
+    sidebar.addTab(tab.windowId, tab.id, tab.index, tab.title, correctFavIconUrl(tab.favIconUrl), tab.url);
   }
 
   function onTabRemoved(tabId, removeInfo) {
@@ -212,14 +200,9 @@ function onReady() {
     // TODO rethink - could be too much overhead
     chrome.tabs.get(tabId, function(tab) {
       var nodeId = 'tab-' + tabId;
-      tree.set_text(nodeId, tab.title);
-      tree.set_icon(nodeId, correctFavIconUrl(tab.favIconUrl));
-      var node = tree.get_node(nodeId);
-      log('Updating node', node);
-      if (node) {
-        node.original.url = tab.url;
-      }
-      stateUpdated();
+      sidebar.setTabText(tabId, tab.title);
+      sidebar.setTabIcon(tabId, correctFavIconUrl(tab.favIconUrl));
+      sidebar.setTabUrl(tabId, tab.url);
     });
   }
 
@@ -262,44 +245,6 @@ function onReady() {
         jQuery(document).scrollTop(nodeElement.offset().top - 25);
       }
     }
-  }
-
-  var stateUpdatedTimer = null;
-  function stateUpdated() {
-    if (stateUpdatedTimer) {
-      clearTimeout(stateUpdatedTimer);
-    }
-    stateUpdatedTimer = setTimeout(function() {
-      log('Processing tabs');
-      var tabsGroupedByUrl = {};
-      $.each(tree._model.data, function(k, node) {
-        if (node && node.original) {
-          if (node.original.url) {
-            var nodeUrl = formatUrlForDuplicatesCheck(node.original.url, '#');
-            tabsGroupedByUrl[nodeUrl] = tabsGroupedByUrl[nodeUrl] || [];
-            tabsGroupedByUrl[nodeUrl].push(node);
-          }
-          else if (node.original.tabId === undefined) {
-            node.text = 'Window (' + node.children.length + ')';
-            tree.redraw_node(node);
-          }
-        }
-      });
-      $.each(tabsGroupedByUrl, function(url, nodes) {
-        nodes.forEach(function(node) {
-          if (nodes.length > 1) { // duplicate URLs
-            log('Duplicate node found', node);
-            node.original.duplicate = true;
-            tree.redraw_node(node);
-
-          }
-          else { // unique URLs
-            node.original.duplicate = false;
-            tree.redraw_node(node);
-          }
-        });
-      });
-    }, 500);
   }
 
   function formatUrlForDuplicatesCheck(url) {

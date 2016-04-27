@@ -10,12 +10,12 @@
         this.element.find('.tabs-lord-icon').remove();
         parent.teardown.call(this);
       };
-      this.redraw_node = function(obj) {
-        obj = parent.redraw_node.apply(this, arguments);
-        if (obj) {
-          var node = this._model.data[obj.id];
+      this.redraw_node = function(objToIgnore) {
+        var result = parent.redraw_node.apply(this, arguments);
+        if (result) {
+          var node = this._model.data[result.id];
           if (node && node.original && node.original.tabId !== undefined) {
-            var liEl = $(obj);
+            var liEl = $(result);
             if (liEl.find('i.tabs-lord-close-icon').length === 0) {
               var closeIconEl = $('<i class="tabs-lord-icon tabs-lord-icon-close"></i>').click(function() {
                 chrome.tabs.remove(node.original.tabId);
@@ -32,7 +32,7 @@
             }
           }
         }
-        return obj;
+        return result;
       };
     };
   })(jQuery);
