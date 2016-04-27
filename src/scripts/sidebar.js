@@ -191,8 +191,7 @@ function onReady() {
 
   function onTabRemoved(tabId, removeInfo) {
     log('Tab removed', tabId, removeInfo);
-    tree.delete_node('tab-' + tabId);
-    stateUpdated();
+    sidebar.removeTab(tabId);
   }
 
   function onTabUpdated(tabId, changeInfo) {

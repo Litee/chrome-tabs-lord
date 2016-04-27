@@ -86,12 +86,15 @@
       return document.getElementById('sidebar-win-' + windowId);
     },
 
-    _removeTab: function(windowId, tabId) {
-      // TODO Make more defensive
-      delete this._model.windows[windowId].tabs[tabId];
-      delete this._model.tabs[tabId];
+    _getTabIdsForWindow: function(windowId) {
+      var result = [];
+      this._model.tabs.forEach(tabModel => {
+      	if (tabModel.windowId === windowId) {
+      	  result.push(tabModel.tabId);
+      	}
+      });
+      return result;
     },
-
 
     _detectDuplicatesTimer: null,
     _detectDuplicates: function() {
@@ -99,7 +102,7 @@
 	      clearTimeout(this._detectDuplicatesTimer);
 	    }
 	    this._detectDuplicatesTimer = setTimeout(() => {
-	      log('Detecting duplicates...');
+	      log('Detecting duplicates...', this._model.tabs);
 	      var tabsGroupedByUrl = new Map();
 	      this._model.tabs.forEach((tabModel, tabId) => {
 	      	var tabIds = tabsGroupedByUrl.get(tabModel.url);
@@ -113,7 +116,7 @@
 	      tabsGroupedByUrl.forEach((tabIds, url) => {
 	        tabIds.forEach(tabId => {
 	          if (tabIds.length > 1) {
-	            log('Duplicate URL found', url, tabIds);
+	            log('Duplicate URL found', url, tabId);
 	          	this._getTabElement(tabId).classList.add('sidebar-tab-duplicate');
 	          }
 	          else {
@@ -129,7 +132,7 @@
       windowEl.id = 'sidebar-win-' + windowId;
       windowEl.children[1].appendChild(document.createTextNode(text));
       this._root.appendChild(windowEl);
-      this._model.windows[windowId] = {text: text, tabs: new Map()};
+      this._model.windows[windowId] = {windowId: windowId, text: text};
     },
 
     removeWindow: function(windowId) {
@@ -137,7 +140,10 @@
       if (windowElement) {
         windowElement.remove();
       }
-      this._model.windows[windowId].tabs.forEach(function(tabId, tabModel) { this._deleteTab(windowId, tabId); });
+      var tabIdsToDelete = this._getTabIdsForWindow(windowId);
+      tabIdsToDelete.forEach(tabId => {
+   		delete this._model.tabs[tabId];
+      });
       delete this._model.window[windowId];
     },
 
@@ -151,14 +157,24 @@
         tabElement.children[0].style.backgroundImage = 'url(' + icon + ')';
         windowElement.children[3].appendChild(tabElement);
         // Model update
-        var tabModel = {tabId: tabId, text: text, icon: icon, url: url, selected: false};
-        windowModel.tabs.set(tabId, tabModel);
+        var tabModel = {windowId: windowId, tabId: tabId, text: text, icon: icon, url: url, selected: false};
         this._model.tabs.set(tabId, tabModel);
-        windowElement.children[1].textContent = windowModel.text + ' (' + Object.keys(windowModel.tabs).length + ')';
+        var tabIdsForWindow = this._getTabIdsForWindow(windowId);
+        windowElement.children[1].textContent = windowModel.text + ' (' + tabIdsForWindow.length + ')';
         this._detectDuplicates();
         return true;
       }
       return false;
+    },
+
+    removeTab: function(tabId) {
+      var tabModel = this._model.tabs.get(tabId);
+      if (tabModel) {
+      	this._model.tabs.delete(tabId);
+      	var tabElement = this._getTabElement(tabId);
+      	tabElement.remove();
+      }
+      this._detectDuplicates();
     },
 
     setTabText: function(tabId, tabText) {
@@ -179,7 +195,7 @@
 
     setTabUrl: function(tabId, url) {
       log('Setting URL for tab', tabId, url);
-      var tabModel = this._model.tabs[tabId];
+      var tabModel = this._model.tabs.get(tabId);
       if (tabModel) {
         tabModel.url = url;
       }
@@ -192,8 +208,8 @@
       	if (tabId !== selectedTabId && tabModel.selected) {
       	  log('Deselecting tab', tabId, tabModel);
           var tabElement = this._getTabElement(tabId);
-          tabElement.classList.remove('sidebar-tab-selected');
           tabModel.selected = false;
+          tabElement.classList.remove('sidebar-tab-selected');
       	}
       });
       var tabElement = this._getTabElement(selectedTabId);
