@@ -227,24 +227,7 @@ function onReady() {
 
   function onTabActivated(activeInfo) {
     log('Tab activated', activeInfo);
-    var selectedNodeId = 'tab-' + activeInfo.tabId;
-    var allSelectedNodeIds = tree.get_selected();
-    var nodeIdsToDeselect = allSelectedNodeIds.filter(function(someNodeId) { return someNodeId !== selectedNodeId; });
-    if (nodeIdsToDeselect.length > 0) {
-      log('Deselecting nodes', nodeIdsToDeselect);
-      tree.deselect_node(nodeIdsToDeselect);
-    }
-    if (nodeIdsToDeselect.length === allSelectedNodeIds.length) {
-      log('Selecting non-selected node', selectedNodeId);
-      tree.select_node(selectedNodeId);
-    }
-    var nodeElement = $('li#tab-' + activeInfo.tabId);
-    if (!nodeElement.visible()) {
-      var offset = nodeElement.offset();
-      if (offset) {
-        jQuery(document).scrollTop(nodeElement.offset().top - 25);
-      }
-    }
+    sidebar.selectTab(activeInfo.tabId);
   }
 
   function formatUrlForDuplicatesCheck(url) {

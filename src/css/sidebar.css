@@ -45,7 +45,7 @@
 
 .sidebar-window-anchor {
 	width: 100%;
-	background-color: #C0C0C0;
+	background-color: #A0A0A0;
 }
 
 .sidebar-tab-icon {
@@ -72,4 +72,8 @@
 
 .sidebar-tab-duplicate {
     background-color: #FFE0E0;
+}
+
+.sidebar-tab-selected {
+	background-color: #C0C0C0;
 }

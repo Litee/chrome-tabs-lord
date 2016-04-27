@@ -151,7 +151,7 @@
         tabElement.children[0].style.backgroundImage = 'url(' + icon + ')';
         windowElement.children[3].appendChild(tabElement);
         // Model update
-        var tabModel = {tabId: tabId, text: text, icon: icon, url: url};
+        var tabModel = {tabId: tabId, text: text, icon: icon, url: url, selected: false};
         windowModel.tabs.set(tabId, tabModel);
         this._model.tabs.set(tabId, tabModel);
         windowElement.children[1].textContent = windowModel.text + ' (' + Object.keys(windowModel.tabs).length + ')';
@@ -184,6 +184,27 @@
         tabModel.url = url;
       }
       this._detectDuplicates();
+    },
+
+    selectTab: function(selectedTabId) {
+      log('Selecting tab', selectedTabId);
+      this._model.tabs.forEach((tabModel, tabId) => {
+      	if (tabId !== selectedTabId && tabModel.selected) {
+      	  log('Deselecting tab', tabId, tabModel);
+          var tabElement = this._getTabElement(tabId);
+          tabElement.classList.remove('sidebar-tab-selected');
+          tabModel.selected = false;
+      	}
+      });
+      var tabElement = this._getTabElement(selectedTabId);
+      tabElement.classList.add('sidebar-tab-selected');
+      this._model.tabs.get(selectedTabId).selected = true;
+	  if (!$(tabElement).visible()) {
+	    var offset = tabElement.offset();
+	    if (offset) {
+	      jQuery(document).scrollTop(tabElement.offset().top - 25);
+	    }
+	  }
     }
   };
 }));
