@@ -95,26 +95,6 @@ function onReady() {
     });
   }
 
-  jsTree.on('select_node.jstree',
-    function(evt, data) {
-      log('Node selected', evt, data);
-      var nodeMeta = data.node.original;
-      if (nodeMeta.tabId && data.selected.length === 1) {
-        chrome.tabs.get(nodeMeta.tabId, function(tab) {
-          chrome.windows.get(tab.windowId, {}, function(window) {
-            if (!tab.active) {
-              log('Activating tab because node was selected', nodeMeta, tab);
-              chrome.tabs.update(tab.id, {active: true});
-            }
-            if (!window.focused) {
-              chrome.windows.update(tab.windowId, {focused: true});
-            }
-          });
-        });
-      }
-    }
-  );
-
   jsTree.on('move_node.jstree', function(evt, data) {
     log('Processing drop...', arguments);
     var windowNode = tree.get_node(data.parent);
@@ -198,10 +178,11 @@ function onReady() {
     log('Tab updated', tabId, changeInfo);
     // TODO rethink - could be too much overhead
     chrome.tabs.get(tabId, function(tab) {
-      var nodeId = 'tab-' + tabId;
-      sidebar.setTabText(tabId, tab.title);
-      sidebar.setTabIcon(tabId, correctFavIconUrl(tab.favIconUrl));
-      sidebar.setTabUrl(tabId, tab.url);
+      if (tab.url.indexOf('chrome-extension://okkbbmpaekgeffidnddjommjfphaihme/') === -1) {
+        sidebar.setTabText(tabId, tab.title);
+        sidebar.setTabIcon(tabId, correctFavIconUrl(tab.favIconUrl));
+        sidebar.setTabUrl(tabId, tab.url);
+      }
     });
   }
 

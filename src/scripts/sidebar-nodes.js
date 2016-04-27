@@ -62,7 +62,6 @@
   };
 
   $.sidebar.core = function(el) {
-    this.bind();
   };
 
   $.sidebar.core.prototype = {
@@ -72,10 +71,14 @@
       this._model.tabs = new Map();
       this._element = $(el).addClass('tabs-lorg-nav-root');
       this._root = $('<ul>').addClass('sidebar-nodes-container-list').appendTo(this._element)[0];
+      this.bind();
     },
 
     bind: function() {
-      // TODO
+      this._element.on('click.sidebar', '.sidebar-tab-node', $.proxy(function (e) {
+      	log('Clicked!', e);
+      	this._tabNodeClicked(e.currentTarget);
+      }, this));
     },
 
     _getTabElement: function(tabId) {
@@ -94,6 +97,22 @@
       	}
       });
       return result;
+    },
+
+    _tabNodeClicked: function(tabNode) {
+      var tabId = parseInt(tabNode.id.substring(12));
+      log('Tab node clicked', tabId, tabNode);
+      chrome.tabs.get(tabId, function(tab) {
+        chrome.windows.get(tab.windowId, {}, function(window) {
+          if (!tab.active) {
+            log('Activating tab because node was selected', tab);
+            chrome.tabs.update(tab.id, {active: true});
+          }
+          if (!window.focused) {
+            chrome.windows.update(tab.windowId, {focused: true});
+          }
+        });
+      });
     },
 
     _detectDuplicatesTimer: null,
