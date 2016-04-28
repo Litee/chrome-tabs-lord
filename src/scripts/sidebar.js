@@ -7,7 +7,7 @@ function onReady() {
 
   var sidebar = $('#sidebar-nodes-container').sidebar();
 
-  var jsTree = $('#tree-root').jstree({
+/*  var jsTree = $('#tree-root').jstree({
     'core': {
       'check_callback': function(operation, node, node_parent) {
         if (operation === 'move_node') {
@@ -100,6 +100,7 @@ function onReady() {
     var windowNode = tree.get_node(data.parent);
     chrome.tabs.move(data.node.original.tabId, {windowId: windowNode.original.windowId, index: data.position});
   });
+*/
 
   log('Parsing existing windows...');
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, function(windowsArr) {
@@ -207,26 +208,4 @@ function onReady() {
     sidebar.selectTab(activeInfo.tabId);
   }
 
-  function formatUrlForDuplicatesCheck(url) {
-    if (url) {
-      var pos = url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=');
-      if (pos === 0) {
-        url = url.substring(71);
-      }
-      pos = url.indexOf('#');
-      if (pos >= 0) {
-        url = url.substring(0, pos);
-      }
-      pos = url.indexOf('http://');
-      if (pos === 0) {
-        url = url.substring(7);
-      }
-      pos = url.indexOf('https://');
-      if (pos === 0) {
-        url = url.substring(8);
-      }
-      return url;
-    }
-    return null;
-  }
 }

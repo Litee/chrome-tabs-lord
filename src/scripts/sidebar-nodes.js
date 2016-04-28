@@ -124,13 +124,13 @@
       });
     },
 
-    _detectDuplicatesTimer: null,
-    _detectDuplicates: function() {
-	    if (this._detectDuplicatesTimer) {
-	      clearTimeout(this._detectDuplicatesTimer);
+    _updateViewTimer: null,
+    _updateView: function() {
+	    if (this._updateViewTimer) {
+	      clearTimeout(this._updateViewTimer);
 	    }
-	    this._detectDuplicatesTimer = setTimeout(() => {
-	      log('Detecting duplicates...', this._model.tabs);
+	    this._updateViewTimer = setTimeout(() => {
+	      log('Updating view...', this._model.tabs);
 	      var tabsGroupedByUrl = new Map();
 	      this._model.tabs.forEach((tabModel, tabId) => {
 	      	var url = tabModel.url;
@@ -162,6 +162,9 @@
               log('Hibernated tab found', tabModel);
               this._getTabElement(tabId).classList.add('sidebar-tab-hibernated');
             }
+            else {
+              this._getTabElement(tabId).classList.remove('sidebar-tab-hibernated');
+            }
 	      });
 	      log('Duplicates analysis result', tabsGroupedByUrl);
 	      tabsGroupedByUrl.forEach((tabIds, url) => {
@@ -185,7 +188,7 @@
         windowEl.children[2].textContent = text + '(1)';
         this._root.appendChild(windowEl);
         this._model.windows.set(windowId, {windowId: windowId, text: text});
-        this._detectDuplicates();
+        this._updateView();
       }
     },
 
@@ -215,7 +218,7 @@
         this._model.tabs.set(tabId, tabModel);
         var tabIdsForWindow = this._getTabIdsForWindow(windowId);
         windowElement.children[2].textContent = windowModel.text + ' (' + tabIdsForWindow.length + ')';
-        this._detectDuplicates();
+        this._updateView();
         return true;
       }
       return false;
@@ -232,7 +235,7 @@
       var windowElement = this._getWindowElement(tabModel.windowId);
       var windowModel = this._model.windows.get(tabModel.windowId);
       windowElement.children[2].textContent = windowModel.text + ' (' + tabIdsForWindow.length + ')';
-      this._detectDuplicates();
+      this._updateView();
     },
 
     setTabText: function(tabId, tabText) {
@@ -257,7 +260,7 @@
       if (tabModel) {
         tabModel.url = url;
       }
-      this._detectDuplicates();
+      this._updateView();
     },
 
     selectTab: function(selectedTabId) {
