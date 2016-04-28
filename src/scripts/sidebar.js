@@ -120,7 +120,7 @@ function onReady() {
   searchBox.on('input', function() {
     log('Search text changed', searchBox.val());
     var searchText = searchBox.val().toLowerCase();
-    tree.search(searchText);
+    sidebar.search(searchText);
   });
 
   chrome.windows.onCreated.addListener(onWindowCreated);

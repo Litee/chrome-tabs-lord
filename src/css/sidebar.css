@@ -87,3 +87,13 @@
 .sidebar-tab-selected {
 	background: linear-gradient(to bottom, #beebff 0%, #a8e4ff 100%);
 }
+
+.sidebar-tab-search-match {
+    font-style: italic;
+    color: #8b0000;
+    font-weight: bold;
+}
+
+.sidebar-tab-hidden {
+    display: none;
+}
