@@ -158,6 +158,10 @@
 	      	}
 	      	tabIds.push(tabId);
 	      	tabsGroupedByUrl.set(url, tabIds);
+	      	if (tabModel.url && tabModel.url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg') === 0) {
+              log('Hibernated tab found', tabModel);
+              this._getTabElement(tabId).classList.add('sidebar-tab-hibernated');
+            }
 	      });
 	      log('Duplicates analysis result', tabsGroupedByUrl);
 	      tabsGroupedByUrl.forEach((tabIds, url) => {

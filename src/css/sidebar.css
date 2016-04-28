@@ -129,3 +129,12 @@
 	background-color: #A0A0A0;
 	height: 24px;
 }
+
+.sidebar-tab-hibernated .sidebar-tab-anchor {
+	color: #C0C0C0;
+	font-style: italic;
+}
+
+.sidebar-tab-hibernated .sidebar-tab-favicon {
+	opacity: 0.3;
+}
