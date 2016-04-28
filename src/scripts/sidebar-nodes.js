@@ -138,6 +138,28 @@
       });
     },
 
+    _normalizeUrlForDuplicatesFinding: function(url) {
+      if (url) {
+        var pos = url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=');
+        if (pos === 0) {
+          url = url.substring(71);
+        }
+        pos = url.indexOf('#');
+        if (pos >= 0) {
+          url = url.substring(0, pos);
+        }
+        pos = url.indexOf('http://');
+        if (pos === 0) {
+          url = url.substring(7);
+        }
+        pos = url.indexOf('https://');
+        if (pos === 0) {
+          url = url.substring(8);
+        }
+      }
+      return url;
+    },
+
     _updateViewTimer: null,
     _updateView: function() {
       if (this._updateViewTimer) {
@@ -148,25 +170,7 @@
         var tabsGroupedByUrl = new Map();
         var tabsGroupedByWindow = new Map();
         this._model.tabs.forEach((tabModel, tabId) => {
-          var url = tabModel.url;
-          if (url) {
-            var pos = url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=');
-            if (pos === 0) {
-              url = url.substring(71);
-            }
-            pos = url.indexOf('#');
-            if (pos >= 0) {
-              url = url.substring(0, pos);
-            }
-            pos = url.indexOf('http://');
-            if (pos === 0) {
-              url = url.substring(7);
-            }
-            pos = url.indexOf('https://');
-            if (pos === 0) {
-              url = url.substring(8);
-            }
-          }
+          var url = this._normalizeUrlForDuplicatesFinding(tabModel.url);
           var tabIdsByUrl = tabsGroupedByUrl.get(url) || [];
           tabIdsByUrl.push(tabId);
           tabsGroupedByUrl.set(url, tabIdsByUrl);
