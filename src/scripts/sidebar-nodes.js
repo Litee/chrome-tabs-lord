@@ -132,6 +132,7 @@
 	    this._updateViewTimer = setTimeout(() => {
 	      log('Updating view...', this._model.tabs);
 	      var tabsGroupedByUrl = new Map();
+	      var tabsGroupedByWindow = new Map();
 	      this._model.tabs.forEach((tabModel, tabId) => {
 	      	var url = tabModel.url;
 	      	if (url) {
@@ -152,12 +153,14 @@
 		        url = url.substring(8);
 		      }
 		    }
-	      	var tabIds = tabsGroupedByUrl.get(url);
-	      	if (tabIds === undefined) {
-	      	  tabIds = [];
-	      	}
-	      	tabIds.push(tabId);
-	      	tabsGroupedByUrl.set(url, tabIds);
+	      	var tabIdsByUrl = tabsGroupedByUrl.get(url) || [];
+	      	tabIdsByUrl.push(tabId);
+	      	tabsGroupedByUrl.set(url, tabIdsByUrl);
+
+	      	var tabIdsByWindow = tabsGroupedByWindow.get(tabModel.windowId) || [];
+	      	tabIdsByWindow.push(tabId);
+	      	tabsGroupedByWindow.set(tabModel.windowId, tabIdsByWindow);
+
 	      	if (tabModel.url && tabModel.url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg') === 0) {
               log('Hibernated tab found', tabModel);
               this._getTabElement(tabId).classList.add('sidebar-tab-hibernated');
@@ -177,6 +180,11 @@
 	          	this._getTabElement(tabId).children[2].classList.remove('sidebar-tab-duplicate');
 	          }
 	        });
+	      });
+	      tabsGroupedByWindow.forEach((tabIds, windowId) => {
+	        var windowElement = this._getWindowElement(windowId);
+	        var windowModel = this._model.windows.get(windowId);
+	        windowElement.children[2].textContent = windowModel.text + ' (' + tabIds.length + ')';
 	      });
 	    }, 500);
     },
@@ -206,7 +214,6 @@
 
     addTab: function(windowId, tabId, pos, text, icon, url) {
       if (this._model.windows.has(windowId)) {
-        var windowModel = this._model.windows.get(windowId);
         var windowElement = this._getWindowElement(windowId);
         var tabElement = _templateTabNode.cloneNode(true);
         tabElement.id = 'sidebar-tab-' + tabId;
@@ -216,8 +223,6 @@
         // Model update
         var tabModel = {windowId: windowId, tabId: tabId, text: text, icon: icon, url: url, selected: false};
         this._model.tabs.set(tabId, tabModel);
-        var tabIdsForWindow = this._getTabIdsForWindow(windowId);
-        windowElement.children[2].textContent = windowModel.text + ' (' + tabIdsForWindow.length + ')';
         this._updateView();
         return true;
       }
@@ -231,10 +236,6 @@
       	var tabElement = this._getTabElement(tabId);
       	tabElement.remove();
       }
-      var tabIdsForWindow = this._getTabIdsForWindow(tabModel.windowId);
-      var windowElement = this._getWindowElement(tabModel.windowId);
-      var windowModel = this._model.windows.get(tabModel.windowId);
-      windowElement.children[2].textContent = windowModel.text + ' (' + tabIdsForWindow.length + ')';
       this._updateView();
     },
 
@@ -289,6 +290,7 @@
       var targetWindowElement = this._getWindowElement(targetWindowId);
       targetWindowElement.children[4].insertBefore(tabElement.parentNode.removeChild(tabElement), targetWindowElement.children[4].children[pos]);
       this._model.tabs.get(tabId).windowId = targetWindowId;
+      this._updateView();
     },
 
     search: function(searchPattern) {
