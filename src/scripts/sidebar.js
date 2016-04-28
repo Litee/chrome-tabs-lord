@@ -141,7 +141,6 @@ function onReady() {
   function onWindowRemoved(windowId) {
     log('Window removed', windowId);
     sidebar.removeWindow(windowId);
-    stateUpdated();
   }
 
   function onWindowFocusChanged(windowId) {
@@ -195,14 +194,12 @@ function onReady() {
 
   function onTabMoved(tabId, moveInfo) {
     log('Tab moved', tabId, moveInfo);
-    tree.move_node('tab-' + tabId, 'window-' + moveInfo.windowId, moveInfo.toIndex);
-    stateUpdated();
+    sidebar.moveTab(tabId, moveInfo.windowId, moveInfo.toIndex);
   }
 
   function onTabAttached(tabId, attachInfo) {
     log('Tab attached', tabId, attachInfo);
-    tree.move_node('tab-' + tabId, 'window-' + attachInfo.newWindowId, attachInfo.newPosition);
-    stateUpdated();
+    sidebar.moveTab(tabId, attachInfo.newWindowId, attachInfo.newPosition);
   }
 
   function onTabActivated(activeInfo) {

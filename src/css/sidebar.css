@@ -57,9 +57,19 @@
 	display: inline-block;
 }
 
+.sidebar-tab-anchor:focus, .sidebar-window-anchor:focus {
+  outline: 0;
+}
+
+.sidebar-tab-anchor, .sidebar-tab-anchor:link, .sidebar-tab-anchor:visited, .sidebar-tab-anchor:hover, .sidebar-tab-anchor:active {
+    text-decoration: none;
+    color: inherit;
+}
+
 .sidebar-tab-anchor, .sidebar-window-anchor {
 	text-decoration: none;
 	color: inherit;
+
     display: inline-block;
     white-space: nowrap;
     padding: 0 4px 0 1px;
@@ -75,5 +85,5 @@
 }
 
 .sidebar-tab-selected {
-	background-color: #C0C0C0;
+	background: linear-gradient(to bottom, #beebff 0%, #a8e4ff 100%);
 }

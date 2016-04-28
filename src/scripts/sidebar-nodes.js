@@ -166,7 +166,7 @@
       tabIdsToDelete.forEach(tabId => {
         this._model.tabs.delete(tabId);
       });
-      this._model.window.delete(windowId);
+      this._model.windows.delete(windowId);
     },
 
     addTab: function(windowId, tabId, pos, text, icon, url) {
@@ -247,6 +247,13 @@
 	      jQuery(document).scrollTop(tabElement.offset().top - 25);
 	    }
 	  }
+    },
+
+    moveTab: function(tabId, targetWindowId, pos) {
+      var tabElement = this._getTabElement(tabId);
+      var targetWindowElement = this._getWindowElement(targetWindowId);
+      targetWindowElement.children[3].insertBefore(tabElement.parentNode.removeChild(tabElement), targetWindowElement.children[3].children[pos]);
+      this._model.tabs.get(tabId).windowId = targetWindowId;
     }
   };
 }));
