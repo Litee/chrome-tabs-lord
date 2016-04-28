@@ -23,6 +23,10 @@
 
 	var _templateWindowNode = document.createElement('li');
 	_templateWindowNode.className = 'sidebar-window-node';
+	var windowHighlightEl = document.createElement('div');
+	windowHighlightEl.className = 'sidebar-window-row';
+	windowHighlightEl.textContent = ' ';
+	_templateWindowNode.appendChild(windowHighlightEl);
 	var windowPrefixEl = document.createElement('span');
 	windowPrefixEl.className = 'sidebar-window-prefix';
 	_templateWindowNode.appendChild(windowPrefixEl);
@@ -36,12 +40,16 @@
 	var windowUl = document.createElement('ul');
     windowUl.className = 'sidebar-tabs-list';
 	_templateWindowNode.appendChild(windowUl);
-	var _windowUlPos = 3;
+	var _windowUlPos = 4;
 
 	var _templateTabNode = document.createElement('li');
 	_templateTabNode.className = 'sidebar-tab-node';
+	var tabHighlightEl = document.createElement('div');
+	tabHighlightEl.className = 'sidebar-tab-row';
+	tabHighlightEl.textContent = ' ';
+	_templateTabNode.appendChild(tabHighlightEl);
 	var tabPrefixEl = document.createElement('span');
-	tabPrefixEl.className = 'sidebar-tab-icon';
+	tabPrefixEl.className = 'sidebar-tab-favicon';
 	_templateTabNode.appendChild(tabPrefixEl);
 	var tabAnchorEl = document.createElement('a');
 	tabAnchorEl.className = 'sidebar-tab-anchor';
@@ -49,7 +57,7 @@
 	tabAnchorEl.setAttribute('tabIndex', '-1');
 	_templateTabNode.appendChild(tabAnchorEl);
 	var tabSuffixEl = document.createElement('span');
-	tabSuffixEl.className = 'sidebar-tab-suffix';
+	tabSuffixEl.className = 'sidebar-tab-icon sidebar-tab-icon-close';
 	_templateTabNode.appendChild(tabSuffixEl);
 
 
@@ -77,7 +85,7 @@
     bind: function() {
       this._element.on('click.sidebar', '.sidebar-tab-node', $.proxy(function (e) {
       	log('Clicked!', e);
-      	this._tabNodeClicked(e.currentTarget);
+      	this._tabNodeClicked(e);
       }, this));
     },
 
@@ -99,7 +107,8 @@
       return result;
     },
 
-    _tabNodeClicked: function(tabNode) {
+    _tabNodeClicked: function(e) {
+      var tabNode = e.currentTarget;
       var tabId = parseInt(tabNode.id.substring(12));
       log('Tab node clicked', tabId, tabNode);
       chrome.tabs.get(tabId, function(tab) {
@@ -124,22 +133,41 @@
 	      log('Detecting duplicates...', this._model.tabs);
 	      var tabsGroupedByUrl = new Map();
 	      this._model.tabs.forEach((tabModel, tabId) => {
-	      	var tabIds = tabsGroupedByUrl.get(tabModel.url);
+	      	var url = tabModel.url;
+	      	if (url) {
+		      var pos = url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=');
+		      if (pos === 0) {
+		        url = url.substring(71);
+		      }
+		      pos = url.indexOf('#');
+		      if (pos >= 0) {
+		        url = url.substring(0, pos);
+		      }
+		      pos = url.indexOf('http://');
+		      if (pos === 0) {
+		        url = url.substring(7);
+		      }
+		      pos = url.indexOf('https://');
+		      if (pos === 0) {
+		        url = url.substring(8);
+		      }
+		    }
+	      	var tabIds = tabsGroupedByUrl.get(url);
 	      	if (tabIds === undefined) {
 	      	  tabIds = [];
 	      	}
 	      	tabIds.push(tabId);
-	      	tabsGroupedByUrl.set(tabModel.url, tabIds);
+	      	tabsGroupedByUrl.set(url, tabIds);
 	      });
 	      log('Duplicates analysis result', tabsGroupedByUrl);
 	      tabsGroupedByUrl.forEach((tabIds, url) => {
 	        tabIds.forEach(tabId => {
 	          if (tabIds.length > 1) {
 	            log('Duplicate URL found', url, tabId);
-	          	this._getTabElement(tabId).classList.add('sidebar-tab-duplicate');
+	          	this._getTabElement(tabId).children[2].classList.add('sidebar-tab-duplicate');
 	          }
 	          else {
-	          	this._getTabElement(tabId).classList.remove('sidebar-tab-duplicate');
+	          	this._getTabElement(tabId).children[2].classList.remove('sidebar-tab-duplicate');
 	          }
 	        });
 	      });
@@ -150,7 +178,7 @@
       if (!this._model.windows.has(windowId)) {
         var windowEl = _templateWindowNode.cloneNode(true);
         windowEl.id = 'sidebar-win-' + windowId;
-        windowEl.children[1].textContent = text + '(1)';
+        windowEl.children[2].textContent = text + '(1)';
         this._root.appendChild(windowEl);
         this._model.windows.set(windowId, {windowId: windowId, text: text});
         this._detectDuplicates();
@@ -175,14 +203,14 @@
         var windowElement = this._getWindowElement(windowId);
         var tabElement = _templateTabNode.cloneNode(true);
         tabElement.id = 'sidebar-tab-' + tabId;
-        tabElement.children[1].appendChild(document.createTextNode(text));
-        tabElement.children[0].style.backgroundImage = 'url(' + icon + ')';
-        windowElement.children[3].appendChild(tabElement);
+        tabElement.children[2].appendChild(document.createTextNode(text));
+        tabElement.children[1].style.backgroundImage = 'url(' + icon + ')';
+        windowElement.children[4].appendChild(tabElement);
         // Model update
         var tabModel = {windowId: windowId, tabId: tabId, text: text, icon: icon, url: url, selected: false};
         this._model.tabs.set(tabId, tabModel);
         var tabIdsForWindow = this._getTabIdsForWindow(windowId);
-        windowElement.children[1].textContent = windowModel.text + ' (' + tabIdsForWindow.length + ')';
+        windowElement.children[2].textContent = windowModel.text + ' (' + tabIdsForWindow.length + ')';
         this._detectDuplicates();
         return true;
       }
@@ -199,7 +227,7 @@
       var tabIdsForWindow = this._getTabIdsForWindow(tabModel.windowId);
       var windowElement = this._getWindowElement(tabModel.windowId);
       var windowModel = this._model.windows.get(tabModel.windowId);
-      windowElement.children[1].textContent = windowModel.text + ' (' + tabIdsForWindow.length + ')';
+      windowElement.children[2].textContent = windowModel.text + ' (' + tabIdsForWindow.length + ')';
       this._detectDuplicates();
     },
 
@@ -207,7 +235,7 @@
       log('Setting text for tab', tabId, tabText);
       var tabElement = this._getTabElement(tabId);
       if (tabElement) {
-        tabElement.children[1].textContent = tabText;
+        tabElement.children[2].textContent = tabText;
       }
     },
 
@@ -215,7 +243,7 @@
       log('Setting icon for tab', tabId, icon);
       var tabElement = this._getTabElement(tabId);
       if (tabElement) {
-        tabElement.children[0].style.backgroundImage = 'url(' + icon + ')';
+        tabElement.children[1].style.backgroundImage = 'url(' + icon + ')';
       }
     },
 
@@ -235,11 +263,11 @@
       	  log('Deselecting tab', tabId, tabModel);
           var tabElement = this._getTabElement(tabId);
           tabModel.selected = false;
-          tabElement.classList.remove('sidebar-tab-selected');
+          tabElement.children[0].classList.remove('sidebar-tab-selected');
       	}
       });
       var tabElement = this._getTabElement(selectedTabId);
-      tabElement.classList.add('sidebar-tab-selected');
+      tabElement.children[0].classList.add('sidebar-tab-selected');
       this._model.tabs.get(selectedTabId).selected = true;
 	  if (!$(tabElement).visible()) {
 	    var offset = tabElement.offset();
@@ -252,7 +280,7 @@
     moveTab: function(tabId, targetWindowId, pos) {
       var tabElement = this._getTabElement(tabId);
       var targetWindowElement = this._getWindowElement(targetWindowId);
-      targetWindowElement.children[3].insertBefore(tabElement.parentNode.removeChild(tabElement), targetWindowElement.children[3].children[pos]);
+      targetWindowElement.children[4].insertBefore(tabElement.parentNode.removeChild(tabElement), targetWindowElement.children[4].children[pos]);
       this._model.tabs.get(tabId).windowId = targetWindowId;
     },
 
