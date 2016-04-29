@@ -125,18 +125,31 @@
     _tabNodeClicked: function(e) {
       var tabNode = e.currentTarget;
       var tabId = parseInt(tabNode.id.substring(12));
-      log('Tab node clicked', tabId, tabNode);
-      chrome.tabs.get(tabId, function(tab) {
-        chrome.windows.get(tab.windowId, {}, window => {
-          if (!tab.active) {
-            log('Activating tab because node was selected', tab);
-            chrome.tabs.update(tab.id, {active: true});
-          }
-          if (!window.focused) {
-            chrome.windows.update(tab.windowId, {focused: true});
-          }
+      log('Tab node clicked', tabId, tabNode, e);
+      if (e.ctrlKey) {
+        var tabElement = this._getTabElement(tabId);
+        var tabModel = this._model.tabs.get(tabId);
+        tabModel.selected = !tabModel.selected;
+        if (tabModel.selected) {
+          tabElement.children[0].classList.add('sidebar-tab-selected');
+        }
+        else {
+          tabElement.children[0].classList.remove('sidebar-tab-selected');
+        }
+      }
+      else {
+        chrome.tabs.get(tabId, function(tab) {
+          chrome.windows.get(tab.windowId, {}, window => {
+            if (!tab.active) {
+              log('Activating tab because node was selected', tab);
+              chrome.tabs.update(tab.id, {active: true});
+            }
+            if (!window.focused) {
+              chrome.windows.update(tab.windowId, {focused: true});
+            }
+          });
         });
-      });
+      }
     },
 
     _normalizeUrlForDuplicatesFinding: function(url) {
