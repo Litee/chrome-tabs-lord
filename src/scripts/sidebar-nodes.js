@@ -22,7 +22,7 @@
   };
 
   var _templateWindowNode = document.createElement('li');
-  _templateWindowNode.className = 'sidebar-window-node';
+  _templateWindowNode.className = 'sidebar-window-node sidebar-window-node-expanded';
   var windowHighlightEl = document.createElement('div');
   windowHighlightEl.className = 'sidebar-window-row';
   windowHighlightEl.textContent = ' ';
@@ -92,6 +92,10 @@
         log('Clicked!', e);
         e.preventDefault();
         this._tabNodeClicked(e);
+      }, this))
+      .on('click.sidebar', '.sidebar-window-prefix', $.proxy(function (e) {
+        log('Clicked window expand/collapse!', e);
+        $(e.currentTarget).parent().toggleClass('sidebar-window-node-expanded sidebar-window-node-collapsed');
       }, this));
     },
 
