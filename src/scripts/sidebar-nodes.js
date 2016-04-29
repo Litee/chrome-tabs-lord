@@ -76,6 +76,11 @@
       .on('click.sidebar', '.sidebar-window-icon-expand-collapse', $.proxy(function (e) {
         log('Clicked window expand/collapse!', e);
         $(e.currentTarget).parent().toggleClass('sidebar-window-node-expanded sidebar-window-node-collapsed');
+      }, this))
+      .on('contextmenu.sidebar', '.sidebar-tab-node', $.proxy(function (e) {
+        log('Context menu clicked!', e);
+        e.preventDefault();
+        this._showNodeContextMenu(e);
       }, this));
 
       $(document)
