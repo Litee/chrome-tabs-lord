@@ -110,7 +110,7 @@
     font-weight: bold;
 }
 
-.sidebar-tab-hidden {
+.sidebar-tab-hidden, .sidebar-window-hidden {
     display: none;
 }
 

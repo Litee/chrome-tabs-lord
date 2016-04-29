@@ -169,16 +169,14 @@
       this._updateViewTimer = setTimeout(() => {
         log('Updating view...', this._model.tabs);
         var tabsGroupedByUrl = new Map();
-        var tabsGroupedByWindow = new Map();
+        var tabsCountByWindow = new Map();
         this._model.tabs.forEach((tabModel, tabId) => {
           var url = this._normalizeUrlForDuplicatesFinding(tabModel.url);
           var tabIdsByUrl = tabsGroupedByUrl.get(url) || [];
           tabIdsByUrl.push(tabId);
           tabsGroupedByUrl.set(url, tabIdsByUrl);
 
-          var tabIdsByWindow = tabsGroupedByWindow.get(tabModel.windowId) || [];
-          tabIdsByWindow.push(tabId);
-          tabsGroupedByWindow.set(tabModel.windowId, tabIdsByWindow);
+          tabsCountByWindow.set(tabModel.windowId, (tabsCountByWindow.get(tabModel.windowId) || 0) + 1);
 
           if (tabModel.url && tabModel.url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg') === 0) {
             log('Hibernated tab found', tabModel);
@@ -200,10 +198,11 @@
             }
           });
         });
-        tabsGroupedByWindow.forEach((tabIds, windowId) => {
+        tabsCountByWindow.forEach((tabsCount, windowId) => {
           var windowElement = this._getWindowElement(windowId);
           var windowModel = this._model.windows.get(windowId);
-          windowElement.children[2].textContent = windowModel.text + ' (' + tabIds.length + ')';
+          windowElement.children[2].textContent = windowModel.text + ' (' + tabsCount + ')';
+          windowModel.tabsCount = tabsCount;
         });
       }, 500);
     },
@@ -313,19 +312,39 @@
     },
 
     search: function(searchPattern) {
+      // TODO Optimize to do DOM changes only when required
+      var windowsWithVisibleTabs = new Map();
       this._model.tabs.forEach((tabModel, tabId) => {
         var tabElement = this._getTabElement(tabId);
-        if (searchPattern.length === 0) {
+        if (searchPattern.length === 0) { // making visible due to search reset
           tabElement.classList.remove('sidebar-tab-hidden');
           tabElement.classList.remove('sidebar-tab-search-match');
+          windowsWithVisibleTabs.set(tabModel.windowId, (windowsWithVisibleTabs.get(tabModel.windowId) || 0) + 1);
         }
-        else if (tabModel.text.toLowerCase().indexOf(searchPattern) === -1 && tabModel.url.toLowerCase().indexOf(searchPattern) === -1) {
+        else if (tabModel.text.toLowerCase().indexOf(searchPattern) >= 0 || tabModel.url.toLowerCase().indexOf(searchPattern) >= 0) { // showing as match
+          tabElement.classList.remove('sidebar-tab-hidden');
+          tabElement.classList.add('sidebar-tab-search-match');
+          windowsWithVisibleTabs.set(tabModel.windowId, (windowsWithVisibleTabs.get(tabModel.windowId) || 0) + 1);
+        }
+        else { // hiding as mismatch
           tabElement.classList.add('sidebar-tab-hidden');
           tabElement.classList.remove('sidebar-tab-search-match');
         }
+      });
+      this._model.windows.forEach((windowModel, windowId) => {
+        var windowElement = this._getWindowElement(windowId);
+        var visibleTabsCount = windowsWithVisibleTabs.get(windowId) || 0;
+        if (visibleTabsCount > 0) {
+          windowElement.classList.remove('sidebar-window-hidden');
+        }
         else {
-          tabElement.classList.remove('sidebar-tab-hidden');
-          tabElement.classList.add('sidebar-tab-search-match');
+          windowElement.classList.add('sidebar-window-hidden');
+        }
+        if (visibleTabsCount < windowModel.tabsCount) {
+          windowElement.children[2].textContent = windowModel.text + ' (' + visibleTabsCount + '/' + windowModel.tabsCount + ')';
+        }
+        else {
+          windowElement.children[2].textContent = windowModel.text + ' (' + windowModel.tabsCount + ')';
         }
       });
     }
