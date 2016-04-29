@@ -90,6 +90,7 @@
       }, this))
       .on('click.sidebar', '.sidebar-tab-node', $.proxy(function (e) {
         log('Clicked!', e);
+        e.preventDefault();
         this._tabNodeClicked(e);
       }, this));
     },
