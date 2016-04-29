@@ -92,7 +92,22 @@
         log('Clicked!', e);
         e.preventDefault();
         this._tabNodeClicked(e);
+      }, this))
+      .on('contextmenu.sidebar', '.sidebar-tab-node', $.proxy(function (e) {
+        log('Context menu clicked!', e);
+        e.preventDefault();
+        this._showNodeContextMenu(e);
       }, this));
+
+      $(document)
+      .on('mousedown.sidebar', () => {
+        this._hideContextMenu();
+      })
+      .on('keydown', (e) => {
+        if (e.which === 27) { // Escape
+          this._hideContextMenu();
+        }
+      });
     },
 
     _getTabElement: function(tabId) {
@@ -123,6 +138,7 @@
     },
 
     _tabNodeClicked: function(e) {
+      this._hideContextMenu();
       var tabNode = e.currentTarget;
       var tabId = parseInt(tabNode.id.substring(12));
       log('Tab node clicked', tabId, tabNode, e);
@@ -150,6 +166,38 @@
           });
         });
       }
+    },
+
+    _createContextMenuElement: function() {
+      var result = $('<div></div>').addClass('sidebar-context-menu');
+      var menuList = $('<span>Move:</span>').appendTo(result);
+      var moveMenuUl = $('<ul>').appendTo(menuList);
+      this._model.windows.forEach((windowModel, windowId) => {
+        chrome.windows.get(windowId, {populate: true}, window => {
+          $('<li>').text(window.tabs[0].title).appendTo(moveMenuUl)
+          .on('click', function() {
+            log('Menu item clicked!');
+          });
+        });
+      });
+      return result;
+    },
+
+    _hideContextMenu: function() {
+      $('.sidebar-context-menu').remove();
+    },
+
+    _showNodeContextMenu: function(e) {
+      var tabElement = e.currentTarget;
+      if (!tabElement) {
+        return false;
+      }
+      this._hideContextMenu();
+      var tabId = parseInt(tabElement.id.substring(12));
+      var tabAnchorElement = tabElement.children[2];
+      var x = $(tabAnchorElement).offset().left;
+      var y = $(tabAnchorElement).offset().top + 20;
+      this._createContextMenuElement().css({'left':x, 'top': y}).appendTo('body');
     },
 
     _normalizeUrlForDuplicatesFinding: function(url) {
@@ -217,7 +265,7 @@
           windowElement.children[2].textContent = windowModel.text + ' (' + tabsCount + ')';
           windowModel.tabsCount = tabsCount;
         });
-      }, 500);
+      }, 100);
     },
 
     addWindow: function(windowId, text) {
