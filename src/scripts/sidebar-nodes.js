@@ -357,9 +357,9 @@
       tabElement.children[0].classList.add('sidebar-tab-selected');
       this._model.tabs.get(selectedTabId).selected = true;
       if (!$(tabElement).visible()) {
-        var offset = tabElement.offset();
+        var offset = $(tabElement).offset();
         if (offset) {
-          jQuery(document).scrollTop(tabElement.offset().top - 25);
+          jQuery(document).scrollTop($(tabElement).offset().top - 25);
         }
       }
     },
