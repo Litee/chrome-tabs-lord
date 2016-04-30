@@ -28,7 +28,7 @@
   windowHighlightEl.textContent = ' ';
   _templateWindowNode.appendChild(windowHighlightEl);
   var windowPrefixEl = document.createElement('span');
-  windowPrefixEl.className = 'sidebar-window-prefix';
+  windowPrefixEl.className = 'sidebar-window-icon-expand-collapse';
   _templateWindowNode.appendChild(windowPrefixEl);
   var windowAnchorEl = document.createElement('a');
   windowAnchorEl.className = 'sidebar-window-anchor';
@@ -98,7 +98,7 @@
         e.preventDefault();
         this._showNodeContextMenu(e);
       }, this))
-      .on('click.sidebar', '.sidebar-window-prefix', $.proxy(function (e) {
+      .on('click.sidebar', '.sidebar-window-icon-expand-collapse', $.proxy(function (e) {
         log('Clicked window expand/collapse!', e);
         $(e.currentTarget).parent().toggleClass('sidebar-window-node-expanded sidebar-window-node-collapsed');
       }, this));
