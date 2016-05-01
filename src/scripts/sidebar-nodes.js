@@ -68,6 +68,11 @@
         e.preventDefault();
         this._tabNodeClicked(e);
       }, this))
+      .on('dblclick.sidebar', '.sidebar-tab-node', $.proxy(function (e) {
+        log('Double-Clicked!', e);
+        e.preventDefault();
+        this._tabNodeDoubleClicked(e);
+      }, this))
       .on('contextmenu.sidebar', '.sidebar-tab-node', $.proxy(function (e) {
         log('Context menu clicked!', e);
         e.preventDefault();
@@ -155,6 +160,20 @@
       }
     },
 
+    _tabNodeDoubleClicked: function(e) {
+      this._hideContextMenu();
+      const tabNode = e.currentTarget;
+      const tabId = parseInt(tabNode.id.substring(12));
+      const tabModel = this._model.tabs.get(tabId);
+      log('Tab node double-clicked', tabId, tabNode, e);
+      if (this._isHibernatedUrl(tabModel.url)) {
+        this._sendMessageToTab(tabId, {action: 'unsuspendOne'});
+      }
+      else {
+        this._sendMessageToTab(tabId, {action: 'suspendOne'});
+      }
+    },
+
     _hideContextMenu: function() {
       $('.sidebar-context-menu').remove();
     },
@@ -224,6 +243,10 @@
       });
     },
 
+    _isHibernatedUrl(url) {
+      return url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=') === 0;
+    },
+
     _normalizeUrlForDuplicatesFinding: function(url) {
       if (url) {
         var pos = url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=');
@@ -263,7 +286,7 @@
 
           tabsCountByWindow.set(tabModel.windowId, (tabsCountByWindow.get(tabModel.windowId) || 0) + 1);
 
-          if (tabModel.url && tabModel.url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg') === 0) {
+          if (tabModel.url && this._isHibernatedUrl(tabModel.url)) {
             log('Hibernated tab found', tabModel);
             this._getTabElement(tabId).classList.add('sidebar-tab-hibernated');
           }
@@ -290,6 +313,11 @@
           windowModel.tabsCount = tabsCount;
         });
       }, 100);
+    },
+
+    _sendMessageToTab: function(tabId, message, callback) {
+      log('Sending message to tab', tabId, message, callback);
+      chrome.runtime.sendMessage('klbibkeccnjlkjkiokjodocebajanakg', message);
     },
 
     addWindow: function(windowId, text) {
