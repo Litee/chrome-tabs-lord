@@ -20,7 +20,8 @@
     ],
     "no-console": "off",
     "no-shadow": "warn",
-    "eqeqeq": "warn"
+    "eqeqeq": "warn",
+    "prefer-arrow-callback" : "warn"
   },
   "env": {
     "es6": true,

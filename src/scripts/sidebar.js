@@ -52,31 +52,31 @@ function onReady() {
 
   function bind() {
     sidebarContainer
-      .on('click.sidebar', '.sidebar-tab-icon-close', $.proxy(function (e) {
+      .on('click.sidebar', '.sidebar-tab-icon-close', $.proxy(e => {
         log('Close icon clicked!', e);
         e.stopImmediatePropagation();
         closeTabClicked(e);
       }, this))
-      .on('click.sidebar', '.sidebar-tab-node', $.proxy(function (e) {
+      .on('click.sidebar', '.sidebar-tab-node', $.proxy(e => {
         log('Clicked!', e);
         e.preventDefault();
         tabNodeClicked(e);
       }, this))
-      .on('dblclick.sidebar', '.sidebar-tab-node', $.proxy(function (e) {
+      .on('dblclick.sidebar', '.sidebar-tab-node', $.proxy(e => {
         log('Double-Clicked!', e);
         e.preventDefault();
         tabNodeDoubleClicked(e);
       }, this))
-      .on('contextmenu.sidebar', '.sidebar-tab-node', $.proxy(function (e) {
+      .on('contextmenu.sidebar', '.sidebar-tab-node', $.proxy(e => {
         log('Context menu clicked!', e);
         e.preventDefault();
         showNodeContextMenu(e);
       }, this))
-      .on('click.sidebar', '.sidebar-window-icon-expand-collapse', $.proxy(function (e) {
+      .on('click.sidebar', '.sidebar-window-icon-expand-collapse', $.proxy(e => {
         log('Clicked window expand/collapse!', e);
         $(e.currentTarget).parent().toggleClass('sidebar-window-node-expanded sidebar-window-node-collapsed');
       }, this))
-      .on('contextmenu.sidebar', '.sidebar-tab-node', $.proxy(function (e) {
+      .on('contextmenu.sidebar', '.sidebar-tab-node', $.proxy(e => {
         log('Context menu clicked!', e);
         e.preventDefault();
         showNodeContextMenu(e);
@@ -211,7 +211,7 @@ function onReady() {
           chrome.windows.create({
             type: 'normal',
             tabId: selectedTabIds[0]
-          }, function(newWindow) {
+          }, newWindow => {
             moveSelectedTabsToWindow(selectedTabIds.slice(1), newWindow.id);
             hideContextMenu();
           });
@@ -232,7 +232,7 @@ function onReady() {
 
   function moveSelectedTabsToWindow(selectedTabIds, targetWindowId) {
     log('Moving tabs to window...', targetWindowId);
-    chrome.tabs.move(selectedTabIds, {windowId: targetWindowId, index: -1}, function() {
+    chrome.tabs.move(selectedTabIds, {windowId: targetWindowId, index: -1}, () => {
         // TODO Restore selection
     });
   }
@@ -515,7 +515,7 @@ function onReady() {
   }
 
   var searchBox = $('.sidebar-search-box');
-  searchBox.on('input', function() {
+  searchBox.on('input', () => {
     log('Search text changed', searchBox.val());
     var searchText = searchBox.val().toLowerCase();
     search(searchText);
