@@ -179,9 +179,7 @@ function onReady() {
     // TODO rethink - could be too much overhead
     chrome.tabs.get(tabId, function(tab) {
       if (tab.url.indexOf('chrome-extension://okkbbmpaekgeffidnddjommjfphaihme/') === -1) {
-        sidebar.setTabText(tabId, tab.title);
-        sidebar.setTabIcon(tabId, correctFavIconUrl(tab.favIconUrl));
-        sidebar.setTabUrl(tabId, tab.url);
+        sidebar.updateTab(tabId, tab.title, correctFavIconUrl(tab.favIconUrl), tab.url);
       }
     });
   }

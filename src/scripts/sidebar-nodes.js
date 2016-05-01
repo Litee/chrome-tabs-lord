@@ -21,43 +21,18 @@
     return $.sidebar.create(this, arg);
   };
 
-  var _templateWindowNode = document.createElement('li');
-  _templateWindowNode.className = 'sidebar-window-node sidebar-window-node-expanded';
-  var windowHighlightEl = document.createElement('div');
-  windowHighlightEl.className = 'sidebar-window-row';
-  windowHighlightEl.textContent = ' ';
-  _templateWindowNode.appendChild(windowHighlightEl);
-  var windowPrefixEl = document.createElement('span');
-  windowPrefixEl.className = 'sidebar-window-icon-expand-collapse';
-  _templateWindowNode.appendChild(windowPrefixEl);
-  var windowAnchorEl = document.createElement('a');
-  windowAnchorEl.className = 'sidebar-window-anchor';
-  windowAnchorEl.setAttribute('href', '#');
-  windowAnchorEl.setAttribute('tabIndex', '-1');
-  _templateWindowNode.appendChild(windowAnchorEl);
-  var windowSuffixEl = document.createElement('span');
-  _templateWindowNode.appendChild(windowSuffixEl);
-  var windowUl = document.createElement('ul');
-  windowUl.className = 'sidebar-tabs-list';
-  _templateWindowNode.appendChild(windowUl);
+  var _templateWindowNode = $('<li>').addClass('sidebar-window-node').addClass('sidebar-window-node-expanded')[0];
+  $('<div>').addClass('sidebar-window-row').text(' ').appendTo(_templateWindowNode);
+  $('<span>').addClass('sidebar-window-icon-expand-collapse').appendTo(_templateWindowNode);
+  $('<a>').addClass('sidebar-window-anchor').attr('href', '#').attr('tabIndex', -1).appendTo(_templateWindowNode);
+  $('<span>').appendTo(_templateWindowNode);
+  $('<ul>').addClass('sidebar-tabs-list').appendTo(_templateWindowNode);
 
-  var _templateTabNode = document.createElement('li');
-  _templateTabNode.className = 'sidebar-tab-node';
-  var tabHighlightEl = document.createElement('div');
-  tabHighlightEl.className = 'sidebar-tab-row';
-  tabHighlightEl.textContent = ' ';
-  _templateTabNode.appendChild(tabHighlightEl);
-  var tabPrefixEl = document.createElement('span');
-  tabPrefixEl.className = 'sidebar-tab-favicon';
-  _templateTabNode.appendChild(tabPrefixEl);
-  var tabAnchorEl = document.createElement('a');
-  tabAnchorEl.className = 'sidebar-tab-anchor';
-  tabAnchorEl.setAttribute('href', '#');
-  tabAnchorEl.setAttribute('tabIndex', '-1');
-  _templateTabNode.appendChild(tabAnchorEl);
-  var tabSuffixEl = document.createElement('span');
-  tabSuffixEl.className = 'sidebar-tab-icon sidebar-tab-icon-close';
-  _templateTabNode.appendChild(tabSuffixEl);
+  var _templateTabNode = $('<li>').addClass('sidebar-tab-node')[0];
+  $('<div>').addClass('sidebar-tab-row').text(' ').appendTo(_templateTabNode);
+  $('<span>').addClass('sidebar-tab-favicon').appendTo(_templateTabNode);
+  $('<a>').addClass('sidebar-tab-anchor').attr('href', '#').attr('tabIndex', -1).appendTo(_templateTabNode);
+  $('<span>').addClass('sidebar-tab-icon').addClass('sidebar-tab-icon-close').appendTo(_templateTabNode);
 
 
   $.sidebar = {};
@@ -274,24 +249,13 @@
       this._updateView();
     },
 
-    setTabText: function(tabId, tabText) {
-      log('Setting text for tab', tabId, tabText);
+    updateTab: function(tabId, text, icon, url) {
+      log('Updating tab', tabId, text, icon, url);
       var tabElement = this._getTabElement(tabId);
       if (tabElement) {
-        tabElement.children[2].textContent = tabText;
-      }
-    },
-
-    setTabIcon: function(tabId, icon) {
-      log('Setting icon for tab', tabId, icon);
-      var tabElement = this._getTabElement(tabId);
-      if (tabElement) {
+        tabElement.children[2].textContent = text;
         tabElement.children[1].style.backgroundImage = 'url(' + icon + ')';
       }
-    },
-
-    setTabUrl: function(tabId, url) {
-      log('Setting URL for tab', tabId, url);
       var tabModel = this._model.tabs.get(tabId);
       if (tabModel) {
         tabModel.url = url;
