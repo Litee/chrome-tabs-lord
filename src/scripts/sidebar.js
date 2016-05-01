@@ -6,14 +6,14 @@ function onReady() {
 
   const sidebarContainer = $('#sidebar-nodes-container').addClass('tabs-lorg-nav-root');
 
-  const templateWindowNode = $('<li>').addClass('sidebar-window-node').addClass('sidebar-window-node-expanded')[0];
+  const templateWindowNode = $('<li>').addClass('sidebar-window-node').addClass('sidebar-window-node-expanded');
   $('<div>').addClass('sidebar-window-row').text(' ').appendTo(templateWindowNode);
   $('<span>').addClass('sidebar-window-icon-expand-collapse').appendTo(templateWindowNode);
   $('<a>').addClass('sidebar-window-anchor').attr('href', '#').attr('tabIndex', -1).appendTo(templateWindowNode);
   $('<span>').appendTo(templateWindowNode);
   $('<ul>').addClass('sidebar-tabs-list').appendTo(templateWindowNode);
 
-  const templateTabNode = $('<li>').addClass('sidebar-tab-node')[0];
+  const templateTabNode = $('<li>').addClass('sidebar-tab-node');
   $('<div>').addClass('sidebar-tab-row').text(' ').appendTo(templateTabNode);
   $('<span>').addClass('sidebar-tab-favicon').appendTo(templateTabNode);
   $('<a>').addClass('sidebar-tab-anchor').attr('href', '#').attr('tabIndex', -1).appendTo(templateTabNode);
@@ -23,7 +23,7 @@ function onReady() {
   model.windows = new Map();
   model.tabs = new Map();
 
-  var root = $('<ul>').addClass('sidebar-nodes-container-list').appendTo(sidebarContainer)[0];
+  var windowsListElement = $('<ul>').addClass('sidebar-nodes-container-list').appendTo(sidebarContainer);
   bind();
   log('Parsing existing windows...');
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, windowsArr => {
@@ -316,10 +316,11 @@ function onReady() {
 
   function addWindowNode(windowId, text) {
     if (!model.windows.has(windowId)) {
-      const windowEl = templateWindowNode.cloneNode(true);
-      windowEl.id = 'sidebar-win-' + windowId;
-      windowEl.children[2].textContent = text + '(1)';
-      root.appendChild(windowEl);
+      templateWindowNode.clone()
+        .attr('id', 'sidebar-win-' + windowId)
+        .appendTo(windowsListElement)
+        .children('.sidebar-window-anchor')
+        .text(text + '(1)');
       model.windows.set(windowId, {windowId: windowId, text: text});
       updateView();
     }
@@ -340,18 +341,16 @@ function onReady() {
   function addTab(windowId, tabId, pos, text, icon, url) {
     if (model.windows.has(windowId)) {
       const windowElement = getWindowElement(windowId);
-      const tabElement = templateTabNode.cloneNode(true);
-      tabElement.id = 'sidebar-tab-' + tabId;
-      tabElement.children[2].appendChild(document.createTextNode(text));
-      tabElement.children[1].style.backgroundImage = 'url(' + icon + ')';
-      windowElement.children[4].appendChild(tabElement);
+      const tabElement = templateTabNode.clone()
+        .attr('id', 'sidebar-tab-' + tabId)
+        .appendTo($(windowElement).children('.sidebar-tabs-list'));
+      tabElement.children('.sidebar-tab-anchor').text(text);
+      tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + icon + ')');
         // Model update
       const tabModel = {windowId: windowId, tabId: tabId, text: text, icon: icon, url: url, selected: false};
       model.tabs.set(tabId, tabModel);
       updateView();
-      return true;
     }
-    return false;
   }
 
   function removeTab(tabId) {
