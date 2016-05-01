@@ -1,5 +1,6 @@
 chrome.browserAction.onClicked.addListener(() => {
-  var sidebarPageUrl = chrome.extension.getURL('sidebar.html');
+  'use strict';
+  const sidebarPageUrl = chrome.extension.getURL('sidebar.html');
 
   console.log('Browser action called!');
 
@@ -34,7 +35,7 @@ chrome.browserAction.onClicked.addListener(() => {
       console.log('Sidebar tabs found', sidebarTabs);
       if (sidebarTabs.length > 1) {
         console.log('Killing extra sidebars...');
-        for (var i = sidebarTabs.length - 1; i > 0 ; i--) { // killing possible extra instances
+        for (let i = sidebarTabs.length - 1; i > 0 ; i--) { // killing possible extra instances
           chrome.windows.remove(sidebarTabs[i].windowId);
           sidebarTabs.splice(i, 1);
         }
@@ -53,7 +54,7 @@ chrome.browserAction.onClicked.addListener(() => {
   }
 
 
-  var updatingWindowPosition = false;
+  let updatingWindowPosition = false;
   function updateWindowsPosition(sidebarWindow, currentWindow) {
     if (updatingWindowPosition)
       return;
@@ -61,25 +62,25 @@ chrome.browserAction.onClicked.addListener(() => {
     console.log('Updating windows position', sidebarWindow, currentWindow);
     chrome.system.display.getInfo(displaysInfo => {
       console.log('Identifying monitor for window', currentWindow, displaysInfo);
-      var windowMidX = currentWindow.left + currentWindow.width / 2;
-      var windowMidY = currentWindow.top + currentWindow.height / 2;
-      var bestDisplay = 0;
-      var bestDistance = 10E6;
-      for (var i = 0; i < displaysInfo.length; i++) {
-        var displayMidX = displaysInfo[i].workArea.left + displaysInfo[i].workArea.width;
-        var displayMidY = displaysInfo[i].workArea.top + displaysInfo[i].workArea.height;
-        var distanceToDisplayCenter = Math.sqrt(Math.pow(windowMidX - displayMidX, 2) + Math.pow(windowMidY - displayMidY, 2));
+      const windowMidX = currentWindow.left + currentWindow.width / 2;
+      const windowMidY = currentWindow.top + currentWindow.height / 2;
+      let bestDisplay = 0;
+      let bestDistance = 10E6;
+      for (let i = 0; i < displaysInfo.length; i++) {
+        const displayMidX = displaysInfo[i].workArea.left + displaysInfo[i].workArea.width;
+        const displayMidY = displaysInfo[i].workArea.top + displaysInfo[i].workArea.height;
+        const distanceToDisplayCenter = Math.sqrt(Math.pow(windowMidX - displayMidX, 2) + Math.pow(windowMidY - displayMidY, 2));
         if (distanceToDisplayCenter < bestDistance) {
           bestDisplay = i;
           bestDistance = distanceToDisplayCenter;
         }
       }
-      var bestDisplayInfo = displaysInfo[bestDisplay];
+      const bestDisplayInfo = displaysInfo[bestDisplay];
       console.log('Best display', bestDisplayInfo, currentWindow.id);
-      var workAreaLeft = bestDisplayInfo.workArea.left;
-      var workAreaTop = bestDisplayInfo.workArea.top;
-      var workAreaHeight = bestDisplayInfo.workArea.height;
-      var workAreaWidth = bestDisplayInfo.workArea.width;
+      const workAreaLeft = bestDisplayInfo.workArea.left;
+      const workAreaTop = bestDisplayInfo.workArea.top;
+      const workAreaHeight = bestDisplayInfo.workArea.height;
+      const workAreaWidth = bestDisplayInfo.workArea.width;
       chrome.windows.update(sidebarWindow.id, {
         focused: true,
         left: workAreaLeft,

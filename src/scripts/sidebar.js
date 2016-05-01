@@ -19,11 +19,11 @@ function onReady() {
   $('<a>').addClass('sidebar-tab-anchor').attr('href', '#').attr('tabIndex', -1).appendTo(templateTabNode);
   $('<span>').addClass('sidebar-tab-icon').addClass('sidebar-tab-icon-close').appendTo(templateTabNode);
 
-  var model = {};
+  const model = {};
   model.windows = new Map();
   model.tabs = new Map();
 
-  var windowsListElement = $('<ul>').addClass('sidebar-nodes-container-list').appendTo(sidebarContainer);
+  const windowsListElement = $('<ul>').addClass('sidebar-nodes-container-list').appendTo(sidebarContainer);
   bind();
   log('Parsing existing windows...');
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, windowsArr => {
@@ -243,7 +243,7 @@ function onReady() {
 
   function normalizeUrlForDuplicatesFinding(url) {
     if (url) {
-      var pos = url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=');
+      let pos = url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=');
       if (pos === 0) {
         url = url.substring(71);
       }
@@ -263,7 +263,7 @@ function onReady() {
     return url;
   }
 
-  var updateViewTimer = null;
+  let updateViewTimer = null;
   function updateView() {
     if (updateViewTimer) {
       clearTimeout(updateViewTimer);
@@ -426,7 +426,7 @@ function onReady() {
     else {
       chrome.windows.get(windowId, {populate:true}, window => {
         if (window.type === 'normal') {
-          var activeTab = window.tabs.find(tab => {
+          const activeTab = window.tabs.find(tab => {
             return tab.active;
           });
           // TODO Too many activation - think how to optimize
@@ -514,10 +514,10 @@ function onReady() {
     });
   }
 
-  var searchBox = $('.sidebar-search-box');
+  const searchBox = $('.sidebar-search-box');
   searchBox.on('input', () => {
     log('Search text changed', searchBox.val());
-    var searchText = searchBox.val().toLowerCase();
+    let searchText = searchBox.val().toLowerCase();
     search(searchText);
   });
 }

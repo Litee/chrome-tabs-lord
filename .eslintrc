@@ -21,7 +21,13 @@
     "no-console": "off",
     "no-shadow": "warn",
     "eqeqeq": "warn",
-    "prefer-arrow-callback" : "warn"
+    "no-var": "warn",
+    "prefer-arrow-callback" : "warn",
+    "prefer-const": "warn",
+    "no-const-assign": "warn",
+    "no-trailing-spaces": "warn",
+    "strict": "warn",
+    "no-unused-vars": "warn"
   },
   "env": {
     "es6": true,
