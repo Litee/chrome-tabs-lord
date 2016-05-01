@@ -92,20 +92,6 @@ chrome.browserAction.onClicked.addListener(function() {
             updatingWindowPosition = false;
           }, 500);
         });
-        /*var activatingSidebar = false;
-        chrome.windows.onFocusChanged.addListener(function(focusedWindowId) {
-          if (focusedWindowId >= 0 && focusedWindowId !== sidebarWindow.id && !activatingSidebar) {
-            console.log('Window focused', focusedWindowId);
-            chrome.windows.get(focusedWindowId, function() {
-              activatingSidebar = true;
-              chrome.windows.update(sidebarWindow.id, {focused: true}, function() {
-                chrome.windows.update(focusedWindowId, {focused: true}, function() {
-                  activatingSidebar = false;
-                });
-              });
-            });
-          }
-        });*/
       });
     });
   }

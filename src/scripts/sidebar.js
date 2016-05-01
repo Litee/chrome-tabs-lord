@@ -48,6 +48,7 @@ function onReady() {
   chrome.tabs.onMoved.addListener(onTabMoved);
   chrome.tabs.onAttached.addListener(onTabAttached);
   chrome.tabs.onActivated.addListener(onTabActivated);
+  chrome.tabs.onReplaced.addListener(onTabReplaced);
 
   function bind() {
     sidebarContainer
@@ -313,7 +314,7 @@ function onReady() {
     chrome.runtime.sendMessage('klbibkeccnjlkjkiokjodocebajanakg', message);
   }
 
-  function addWindow(windowId, text) {
+  function addWindowNode(windowId, text) {
     if (!model.windows.has(windowId)) {
       const windowEl = templateWindowNode.cloneNode(true);
       windowEl.id = 'sidebar-win-' + windowId;
@@ -324,7 +325,7 @@ function onReady() {
     }
   }
 
-  function removeWindow(windowId) {
+  function removeWindowNode(windowId) {
     const windowElement = getWindowElement(windowId);
     if (windowElement) {
       windowElement.remove();
@@ -359,20 +360,6 @@ function onReady() {
       model.tabs.delete(tabId);
       const tabElement = getTabElement(tabId);
       tabElement.remove();
-    }
-    updateView();
-  }
-
-  function updateTab(tabId, text, icon, url) {
-    log('Updating tab', tabId, text, icon, url);
-    const tabElement = getTabElement(tabId);
-    if (tabElement) {
-      tabElement.children[2].textContent = text;
-      tabElement.children[1].style.backgroundImage = 'url(' + icon + ')';
-    }
-    const tabModel = model.tabs.get(tabId);
-    if (tabModel) {
-      tabModel.url = url;
     }
     updateView();
   }
@@ -425,12 +412,12 @@ function onReady() {
 
   function onWindowCreated(window) {
     log('Window created', window);
-    addWindow(window.id, 'Window');
+    addWindowNode(window.id, 'Window');
   }
 
   function onWindowRemoved(windowId) {
     log('Window removed', windowId);
-    removeWindow(windowId);
+    removeWindowNode(windowId);
   }
 
   function onWindowFocusChanged(windowId) {
@@ -467,9 +454,16 @@ function onReady() {
     log('Tab updated', tabId, changeInfo);
     // TODO rethink - could be too much overhead
     chrome.tabs.get(tabId, tab => {
-      if (tab.url.indexOf('chrome-extension://okkbbmpaekgeffidnddjommjfphaihme/') === -1) {
-        updateTab(tabId, tab.title, correctFavIconUrl(tab.favIconUrl), tab.url);
+      const tabElement = getTabElement(tabId);
+      if (tabElement) {
+        tabElement.children[2].textContent = tab.title;
+        tabElement.children[1].style.backgroundImage = 'url(' + correctFavIconUrl(tab.favIconUrl) + ')';
       }
+      const tabModel = model.tabs.get(tabId);
+      if (tabModel) {
+        tabModel.url = tab.url;
+      }
+      updateView();
     });
   }
 
@@ -511,6 +505,14 @@ function onReady() {
         jQuery(document).scrollTop($(tabElement).offset().top - 25);
       }
     }
+  }
+
+  function onTabReplaced(addedTabId, removedTabId) {
+    log('Tab replaced', addedTabId, removedTabId);
+    removeTab(removedTabId);
+    chrome.tabs.get(addedTabId, tab => {
+      onTabCreated(tab);
+    });
   }
 
   var searchBox = $('.sidebar-search-box');
