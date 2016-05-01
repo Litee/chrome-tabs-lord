@@ -177,17 +177,29 @@
       const result = $('<div></div>').addClass('sidebar-context-menu');
       const menuList = $('<span>Move to window:</span>').appendTo(result);
       const moveMenuUl = $('<ul>').addClass('sidebar-context-menu-items-list').appendTo(menuList);
+      const selectedTabIds = this._getSelectedTabIds();
+      if (selectedTabIds.length === 0) {
+        selectedTabIds.push(contextTabId);
+      }
       chrome.windows.getAll({populate: true, windowTypes: ['normal']}, windows => {
         windows.forEach(window => {
           const menuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
           $('<a>').addClass('sidebar-context-menu-item-anchor').attr('href', '#').text('With tab "' + window.tabs[0].title + '"').appendTo(menuItemElement)
           .click('click', () => {
-            log('Move window menu item clicked', contextTabId, window.id);
-            const selectedTabIds = this._getSelectedTabIds();
-            if (selectedTabIds.length === 0) {
-              selectedTabIds.push(contextTabId);
-            }
+            log('"Move to another window" menu item clicked', contextTabId, window.id);
             this._moveSelectedTabsToWindow(selectedTabIds, window.id);
+            this._hideContextMenu();
+          });
+        });
+        const menuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
+        $('<a>').addClass('sidebar-context-menu-item-anchor').attr('href', '#').text('New window').appendTo(menuItemElement)
+        .click('click', () => {
+          log('"Move to new window" menu item clicked', contextTabId, window.id);
+          chrome.windows.create({
+            type: 'normal',
+            tabId: selectedTabIds[0]
+          }, function(newWindow) {
+            this._moveSelectedTabsToWindow(selectedTabIds.slice(1), newWindow.id);
             this._hideContextMenu();
           });
         });
