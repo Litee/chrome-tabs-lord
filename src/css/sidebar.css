@@ -12,6 +12,7 @@
 	margin-top: 3px;
 	vertical-align: top;
 	text-align: center;
+	float: right;
 }
 
 .sidebar-tab-icon-close:hover, .sidebar-tab-icon-close:focus, .sidebar-tab-icon-close:active {
