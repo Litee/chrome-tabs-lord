@@ -498,6 +498,7 @@ function onReady() {
     const tabElement = getTabElement(selectedTabId);
     tabElement.children[0].classList.add('sidebar-tab-selected');
     model.tabs.get(selectedTabId).selected = true;
+    $(tabElement).parents('.sidebar-window-node').addClass('sidebar-window-node-expanded').removeClass('sidebar-window-node-collapsed');
     if (!$(tabElement).visible()) {
       const offset = $(tabElement).offset();
       if (offset) {
@@ -517,7 +518,7 @@ function onReady() {
   const searchBox = $('.sidebar-search-box');
   searchBox.on('input', () => {
     log('Search text changed', searchBox.val());
-    let searchText = searchBox.val().toLowerCase();
+    const searchText = searchBox.val().toLowerCase();
     search(searchText);
   });
 }
