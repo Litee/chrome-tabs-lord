@@ -49,7 +49,7 @@
     min-width: 24px;
 }
 
-.sidebar-window-icon-expand-collapse {
+.sidebar-window-icon {
 	position: relative;
 	display: inline-block;
 	background-size: auto;
@@ -69,6 +69,12 @@
 
 .sidebar-window-node-collapsed > .sidebar-tabs-list {
     display: none;
+}
+
+.sidebar-window-icon-edit {
+	background-image: url("/images/edit.png");
+	float: right;
+	opacity: 0.5;
 }
 
 .sidebar-tab-node {
@@ -174,4 +180,9 @@
 
 .sidebar-context-menu-item-anchor:hover {
 	font-weight: bold;
+}
+
+input.sidebar-window-title-edit {
+	width: 250px;
+	vertical-align: top;
 }

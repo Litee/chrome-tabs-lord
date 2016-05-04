@@ -27,3 +27,7 @@ I am using it for myself to identify issues. If you want to play with extension 
 - # of total tabs in main extension icon
 - Update sidebar in batches to avoid "hanging extension" issues with huge number of tabs
 - Visual feedback on tab loading - e.g. rotating icon
+
+Used resources:
+
+- Icons from www.flaticon.com: SimpleIcon, Freepic and Dave Gandy from www.flaticon.com

@@ -8,9 +8,9 @@ function onReady() {
 
   const templateWindowNode = $('<li>').addClass('sidebar-window-node').addClass('sidebar-window-node-expanded');
   $('<div>').addClass('sidebar-window-row').text(' ').appendTo(templateWindowNode);
-  $('<span>').addClass('sidebar-window-icon-expand-collapse').appendTo(templateWindowNode);
+  $('<span>').addClass('sidebar-window-icon').addClass('sidebar-window-icon-expand-collapse').appendTo(templateWindowNode);
   $('<a>').addClass('sidebar-window-anchor').attr('href', '#').attr('tabIndex', -1).appendTo(templateWindowNode);
-  $('<span>').appendTo(templateWindowNode);
+  $('<span>').addClass('sidebar-window-icon').addClass('sidebar-window-icon-edit').appendTo(templateWindowNode);
   $('<ul>').addClass('sidebar-tabs-list').appendTo(templateWindowNode);
 
   const templateTabNode = $('<li>').addClass('sidebar-tab-node');
@@ -80,6 +80,10 @@ function onReady() {
         log('Context menu clicked!', e);
         e.preventDefault();
         showNodeContextMenu(e);
+      }, this))
+      .on('click.sidebar', '.sidebar-window-icon-edit', $.proxy(e => {
+        // e.preventDefault();
+        startWindowNodeEdit(e);
       }, this));
 
     $(document)
@@ -94,6 +98,42 @@ function onReady() {
           hideContextMenu();
         }
       });
+  }
+
+  function startWindowNodeEdit(mouseEvent) {
+    sidebarContainer.children('input').remove(); // Cleaning up just in case
+    const windowElement = $(mouseEvent.currentTarget.parentNode);
+    const windowId = parseInt(windowElement[0].id.substring(12));
+    const oldText = model.windows.get(windowId).text;
+    windowElement.children('.sidebar-window-row').hide();
+    windowElement.children('.sidebar-window-anchor').hide();
+    const inputElement = $('<input>', {
+      'blur': $.proxy(() => {
+        stopWindowNodeEdit(windowId, inputElement.val());
+      }),
+      'keydown': function(e) {
+        if (e.which === 27) { // Escape
+          stopWindowNodeEdit(windowId, oldText);
+        }
+        if (e.which === 13) { // Enter
+          this.blur();
+        }
+      }
+    }).addClass('sidebar-window-title-edit');
+    $(windowElement).children('.sidebar-window-icon-expand-collapse').after(inputElement);
+    inputElement.focus();
+  }
+
+  function stopWindowNodeEdit(windowId, newText) {
+    if (newText.length === 0) {
+      newText = 'Window';
+    }
+    const windowElement = $(getWindowElement(windowId));
+    model.windows.get(windowId).text = newText;
+    windowElement.children('.sidebar-window-row').show();
+    windowElement.children('.sidebar-window-anchor').show();
+    windowElement.children('input').remove();
+    updateView();
   }
 
   function getTabElement(tabId) {
@@ -196,8 +236,10 @@ function onReady() {
     }
     chrome.windows.getAll({populate: true, windowTypes: ['normal']}, windows => {
       windows.forEach(window => {
+        const windowModel = model.windows.get(window.id);
         const menuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
-        $('<a>').addClass('sidebar-context-menu-item-anchor').attr('href', '#').text('With tab "' + window.tabs[0].title + '"').appendTo(menuItemElement)
+        const menuText = windowModel.text === 'Window' ? 'With tab "' + window.tabs[0].title + '"' : windowModel.text;
+        $('<a>').addClass('sidebar-context-menu-item-anchor').attr('href', '#').text(menuText).appendTo(menuItemElement)
           .click('click', () => {
             log('"Move to another window" menu item clicked', contextTabId, window.id);
             moveSelectedTabsToWindow(selectedTabIds, window.id);
