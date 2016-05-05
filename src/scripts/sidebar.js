@@ -319,7 +319,7 @@ function onReady() {
         $(getTabElement(tabId)).toggleClass('sidebar-tab-hibernated', tabModel.url && isHibernatedUrl(tabModel.url));
       });
       log('Duplicates analysis result', tabsGroupedByUrl);
-      tabsGroupedByUrl.forEach((tabIds, url) => {
+      tabsGroupedByUrl.forEach((tabIds) => {
         tabIds.forEach(tabId => {
           $(getTabElement(tabId)).children('.sidebar-tab-anchor').toggleClass('sidebar-tab-duplicate', tabIds.length > 1);
         });
@@ -464,7 +464,7 @@ function onReady() {
 
   function onTabCreated(tab) {
     log('Tab created', tab);
-    addTab(tab.windowId, tab.id, tab.index, tab.title, correctFavIconUrl(tab.favIconUrl), tab.url);
+    addTab(tab.windowId, tab.id, tab.index, tab.title || 'Loading...', correctFavIconUrl(tab.favIconUrl), tab.url);
   }
 
   function onTabRemoved(tabId, removeInfo) {
@@ -475,26 +475,24 @@ function onReady() {
   function onTabUpdated(tabId, changeInfo) {
     log('Tab updated', tabId, changeInfo);
     // TODO rethink - could be too much overhead
-    chrome.tabs.get(tabId, tab => {
-      const tabElement = getTabElement(tabId);
-      const tabModel = model.tabs.get(tabId);
-      if (tabModel) {
-        tabModel.url = tab.url;
-        if (tabModel.title !== tab.title) {
-          tabModel.title = tab.title;
-          if (tabElement) {
-            tabElement.children[2].textContent = tab.title;
-          }
-        }
-        if (tabModel.favIconUrl !== tab.favIconUrl) {
-          tabModel.favIconUrl = tab.favIconUrl;
-          if (tabElement) {
-            tabElement.children[1].style.backgroundImage = 'url(' + correctFavIconUrl(tab.favIconUrl) + ')';
-          }
-        }
+    const tabElement = $(getTabElement(tabId));
+    const tabModel = model.tabs.get(tabId);
+    if (tabModel) {
+      if (changeInfo.url) {
+        tabModel.url = changeInfo.url;
       }
-      updateView();
-    });
+      const tabTitle = changeInfo.title;
+      if (tabTitle && tabModel.title !== tabTitle) {
+        tabModel.title = tabTitle;
+        tabElement.children('.sidebar-tab-anchor').text(tabTitle);
+      }
+      const favIconUrl = changeInfo.favIconUrl;
+      if (favIconUrl && tabModel.favIconUrl !== favIconUrl) {
+        tabModel.favIconUrl = favIconUrl;
+        tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + correctFavIconUrl(favIconUrl) + ')');
+      }
+    }
+    updateView();
   }
 
   function correctFavIconUrl(iconUrl) {
