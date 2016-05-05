@@ -169,15 +169,10 @@ function onReady() {
     const tabId = parseInt(tabNode.id.substring(12));
     log('Tab node clicked', tabId, tabNode, e);
     if (e.ctrlKey) {
-      const tabElement = getTabElement(tabId);
+      const tabElement = $(getTabElement(tabId));
       const tabModel = model.tabs.get(tabId);
       tabModel.selected = !tabModel.selected;
-      if (tabModel.selected) {
-        tabElement.children[0].classList.add('sidebar-tab-selected');
-      }
-      else {
-        tabElement.children[0].classList.remove('sidebar-tab-selected');
-      }
+      tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', tabModel.selected);
     }
     else {
       chrome.tabs.get(tabId, tab => {
@@ -323,7 +318,7 @@ function onReady() {
         tabsCountByWindow.set(tabModel.windowId, (tabsCountByWindow.get(tabModel.windowId) || 0) + 1);
 
         if (tabModel.url && isHibernatedUrl(tabModel.url)) {
-          log('Hibernated tab found', tabModel);
+          // log('Hibernated tab found', tabModel);
           getTabElement(tabId).classList.add('sidebar-tab-hibernated');
         }
         else {
@@ -333,19 +328,13 @@ function onReady() {
       log('Duplicates analysis result', tabsGroupedByUrl);
       tabsGroupedByUrl.forEach((tabIds, url) => {
         tabIds.forEach(tabId => {
-          if (tabIds.length > 1) {
-            log('Duplicate URL found', url, tabId);
-            getTabElement(tabId).children[2].classList.add('sidebar-tab-duplicate');
-          }
-          else {
-            getTabElement(tabId).children[2].classList.remove('sidebar-tab-duplicate');
-          }
+          $(getTabElement(tabId)).children('.sidebar-tab-anchor').toggleClass('sidebar-tab-duplicate', tabIds.length > 1);
         });
       });
       tabsCountByWindow.forEach((tabsCount, windowId) => {
-        const windowElement = getWindowElement(windowId);
+        const windowElement = $(getWindowElement(windowId));
         const windowModel = model.windows.get(windowId);
-        windowElement.children[2].textContent = windowModel.text + ' (' + tabsCount + ')';
+        windowElement.children('.sidebar-window-anchor').text(windowModel.text + ' (' + tabsCount + ')');
         windowModel.tabsCount = tabsCount;
       });
       document.title = 'Chrome - Tabs Lord (' + model.tabs.size + ')';
@@ -386,7 +375,8 @@ function onReady() {
       const windowElement = getWindowElement(windowId);
       const tabElement = templateTabNode.clone()
         .attr('id', 'sidebar-tab-' + tabId)
-        .appendTo($(windowElement).children('.sidebar-tabs-list'));
+        .appendTo($(windowElement)
+        .children('.sidebar-tabs-list'));
       tabElement.children('.sidebar-tab-anchor').text(text);
       tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + icon + ')');
         // Model update
@@ -435,20 +425,17 @@ function onReady() {
       }
     });
     model.windows.forEach((windowModel, windowId) => {
-      const windowElement = getWindowElement(windowId);
+      const windowElement = $(getWindowElement(windowId));
       const visibleTabsCount = windowsWithVisibleTabs.get(windowId) || 0;
-      if (visibleTabsCount > 0) {
-        windowElement.classList.remove('sidebar-window-hidden');
-      }
-      else {
-        windowElement.classList.add('sidebar-window-hidden');
-      }
+      windowElement.toggleClass('sidebar-window-hidden', visibleTabsCount === 0);
+      let windowText;
       if (visibleTabsCount < windowModel.tabsCount) {
-        windowElement.children[2].textContent = windowModel.text + ' (' + visibleTabsCount + '/' + windowModel.tabsCount + ')';
+        windowText = windowModel.text + ' (' + visibleTabsCount + '/' + windowModel.tabsCount + ')';
       }
       else {
-        windowElement.children[2].textContent = windowModel.text + ' (' + windowModel.tabsCount + ')';
+        windowText = windowModel.text + ' (' + windowModel.tabsCount + ')';
       }
+      windowElement.children('.sidebar-window-anchor').text(windowText);
     });
   }
 
