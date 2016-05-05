@@ -348,6 +348,7 @@ function onReady() {
         windowElement.children[2].textContent = windowModel.text + ' (' + tabsCount + ')';
         windowModel.tabsCount = tabsCount;
       });
+      document.title = 'Chrome - Tabs Lord (' + model.tabs.size + ')';
     }, 100);
   }
 
