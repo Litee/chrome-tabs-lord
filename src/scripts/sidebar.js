@@ -316,14 +316,7 @@ function onReady() {
         tabsGroupedByUrl.set(url, tabIdsByUrl);
 
         tabsCountByWindow.set(tabModel.windowId, (tabsCountByWindow.get(tabModel.windowId) || 0) + 1);
-
-        if (tabModel.url && isHibernatedUrl(tabModel.url)) {
-          // log('Hibernated tab found', tabModel);
-          getTabElement(tabId).classList.add('sidebar-tab-hibernated');
-        }
-        else {
-          getTabElement(tabId).classList.remove('sidebar-tab-hibernated');
-        }
+        $(getTabElement(tabId)).toggleClass('sidebar-tab-hibernated', tabModel.url && isHibernatedUrl(tabModel.url));
       });
       log('Duplicates analysis result', tabsGroupedByUrl);
       tabsGroupedByUrl.forEach((tabIds, url) => {
@@ -484,13 +477,21 @@ function onReady() {
     // TODO rethink - could be too much overhead
     chrome.tabs.get(tabId, tab => {
       const tabElement = getTabElement(tabId);
-      if (tabElement) {
-        tabElement.children[2].textContent = tab.title;
-        tabElement.children[1].style.backgroundImage = 'url(' + correctFavIconUrl(tab.favIconUrl) + ')';
-      }
       const tabModel = model.tabs.get(tabId);
       if (tabModel) {
         tabModel.url = tab.url;
+        if (tabModel.title !== tab.title) {
+          tabModel.title = tab.title;
+          if (tabElement) {
+            tabElement.children[2].textContent = tab.title;
+          }
+        }
+        if (tabModel.favIconUrl !== tab.favIconUrl) {
+          tabModel.favIconUrl = tab.favIconUrl;
+          if (tabElement) {
+            tabElement.children[1].style.backgroundImage = 'url(' + correctFavIconUrl(tab.favIconUrl) + ')';
+          }
+        }
       }
       updateView();
     });
