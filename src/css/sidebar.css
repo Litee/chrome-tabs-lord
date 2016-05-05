@@ -59,6 +59,10 @@
 	height: 24px;
 }
 
+.sidebar-window-icon:hover, .sidebar-window-icon:focus, .sidebar-window-icon:active {
+  opacity:1;
+}
+
 .sidebar-window-node-expanded > .sidebar-window-icon-expand-collapse {
 	background-image: url("/images/chevron-down.png");
 }
@@ -183,6 +187,6 @@
 }
 
 input.sidebar-window-title-edit {
-	width: 250px;
+	width: 200px;
 	vertical-align: top;
 }
