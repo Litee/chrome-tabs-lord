@@ -30,4 +30,4 @@ I am using it for myself to identify issues. If you want to play with extension 
 
 Used resources:
 
-- Icons from www.flaticon.com: SimpleIcon, Freepic and Dave Gandy from www.flaticon.com
+- Icons from www.flaticon.com: SimpleIcon pack, Freepic and Dave Gandy
