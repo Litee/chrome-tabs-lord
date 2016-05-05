@@ -19,9 +19,7 @@ function onReady() {
   $('<a>').addClass('sidebar-tab-anchor').attr('href', '#').attr('tabIndex', -1).appendTo(templateTabNode);
   $('<span>').addClass('sidebar-tab-icon').addClass('sidebar-tab-icon-close').appendTo(templateTabNode);
 
-  const model = {};
-  model.windows = new Map();
-  model.tabs = new Map();
+  const model = new Model();
 
   const windowsListElement = $('<ul>').addClass('sidebar-nodes-container-list').appendTo(sidebarContainer);
   bind();
@@ -104,7 +102,7 @@ function onReady() {
     sidebarContainer.children('input').remove(); // Cleaning up just in case
     const windowElement = $(mouseEvent.currentTarget.parentNode);
     const windowId = parseInt(windowElement[0].id.substring(12));
-    const oldText = model.windows.get(windowId).text;
+    const oldText = model.getWindowModel(windowId).text;
     windowElement.children('.sidebar-window-row').hide();
     windowElement.children('.sidebar-window-anchor').hide();
     const inputElement = $('<input>', {
@@ -129,7 +127,7 @@ function onReady() {
       newText = 'Window';
     }
     const windowElement = $(getWindowElement(windowId));
-    model.windows.get(windowId).text = newText;
+    model.updateWindowModel(windowId, {text: newText});
     windowElement.children('.sidebar-window-row').show();
     windowElement.children('.sidebar-window-anchor').show();
     windowElement.children('input').remove();
@@ -142,16 +140,6 @@ function onReady() {
 
   function getWindowElement(windowId) {
     return document.getElementById('sidebar-win-' + windowId);
-  }
-
-  function getTabIdsForWindow(windowId) {
-    const result = [];
-    model.tabs.forEach(tabModel => {
-      if (tabModel.windowId === windowId) {
-        result.push(tabModel.tabId);
-      }
-    });
-    return result;
   }
 
   function closeTabClicked(e) {
@@ -170,9 +158,10 @@ function onReady() {
     log('Tab node clicked', tabId, tabNode, e);
     if (e.ctrlKey) {
       const tabElement = $(getTabElement(tabId));
-      const tabModel = model.tabs.get(tabId);
-      tabModel.selected = !tabModel.selected;
-      tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', tabModel.selected);
+      const tabModel = model.getTabModel(tabId);
+      const newTabSelectedValue = !tabModel.selected;
+      model.updateTabModel(tabId, {selected: newTabSelectedValue});
+      tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', newTabSelectedValue);
     }
     else {
       chrome.tabs.get(tabId, tab => {
@@ -193,14 +182,9 @@ function onReady() {
     hideContextMenu();
     const tabNode = e.currentTarget;
     const tabId = parseInt(tabNode.id.substring(12));
-    const tabModel = model.tabs.get(tabId);
+    const tabModel = model.getTabModel(tabId);
     log('Tab node double-clicked', tabId, tabNode, e);
-    if (isHibernatedUrl(tabModel.url)) {
-      sendMessageToTab(tabId, {action: 'unsuspendOne'});
-    }
-    else {
-      sendMessageToTab(tabId, {action: 'suspendOne'});
-    }
+    sendMessageToTab(tabId, {action: tabModel.hibernated ? 'unsuspendOne' : 'suspendOne'});
   }
 
   function hideContextMenu() {
@@ -225,13 +209,13 @@ function onReady() {
     const result = $('<div></div>').addClass('sidebar-context-menu');
     const menuList = $('<span>Move to window:</span>').appendTo(result);
     const moveMenuUl = $('<ul>').addClass('sidebar-context-menu-items-list').appendTo(menuList);
-    const selectedTabIds = getSelectedTabIds();
+    const selectedTabIds = model.getSelectedTabIds();
     if (selectedTabIds.length === 0) {
       selectedTabIds.push(contextTabId);
     }
     chrome.windows.getAll({populate: true, windowTypes: ['normal']}, windows => {
       windows.forEach(window => {
-        const windowModel = model.windows.get(window.id);
+        const windowModel = model.getWindowModel(window.id);
         const menuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
         const menuText = windowModel.text === 'Window' ? 'With tab "' + window.tabs[0].title + '"' : windowModel.text;
         $('<a>').addClass('sidebar-context-menu-item-anchor').attr('href', '#').text(menuText).appendTo(menuItemElement)
@@ -257,47 +241,11 @@ function onReady() {
     return result;
   }
 
-  function getSelectedTabIds() {
-    const selectedTabIds = [];
-    model.tabs.forEach((tabModel, tabId) => {
-      if (tabModel.selected) {
-        selectedTabIds.push(tabId);
-      }
-    });
-    return selectedTabIds;
-  }
-
   function moveSelectedTabsToWindow(selectedTabIds, targetWindowId) {
     log('Moving tabs to window...', targetWindowId);
     chrome.tabs.move(selectedTabIds, {windowId: targetWindowId, index: -1}, () => {
         // TODO Restore selection
     });
-  }
-
-  function isHibernatedUrl(url) {
-    return url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=') === 0;
-  }
-
-  function normalizeUrlForDuplicatesFinding(url) {
-    if (url) {
-      let pos = url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=');
-      if (pos === 0) {
-        url = url.substring(71);
-      }
-      pos = url.indexOf('#');
-      if (pos >= 0) {
-        url = url.substring(0, pos);
-      }
-      pos = url.indexOf('http://');
-      if (pos === 0) {
-        url = url.substring(7);
-      }
-      pos = url.indexOf('https://');
-      if (pos === 0) {
-        url = url.substring(8);
-      }
-    }
-    return url;
   }
 
   let updateViewTimer = null;
@@ -306,31 +254,20 @@ function onReady() {
       clearTimeout(updateViewTimer);
     }
     updateViewTimer = setTimeout(() => {
-      log('Updating view...', model.tabs);
-      const tabsGroupedByUrl = new Map();
-      const tabsCountByWindow = new Map();
-      model.tabs.forEach((tabModel, tabId) => {
-        const url = normalizeUrlForDuplicatesFinding(tabModel.url);
-        const tabIdsByUrl = tabsGroupedByUrl.get(url) || [];
-        tabIdsByUrl.push(tabId);
-        tabsGroupedByUrl.set(url, tabIdsByUrl);
-
-        tabsCountByWindow.set(tabModel.windowId, (tabsCountByWindow.get(tabModel.windowId) || 0) + 1);
-        $(getTabElement(tabId)).toggleClass('sidebar-tab-hibernated', tabModel.url && isHibernatedUrl(tabModel.url));
+      log('Updating view...');
+      model.forEachTab(tabModel => {
+        $(getTabElement(tabModel.tabId)).toggleClass('sidebar-tab-hibernated', tabModel.hibernated);
       });
-      log('Duplicates analysis result', tabsGroupedByUrl);
-      tabsGroupedByUrl.forEach((tabIds) => {
+      model.forEachTabByUrl(tabIds => {
         tabIds.forEach(tabId => {
           $(getTabElement(tabId)).children('.sidebar-tab-anchor').toggleClass('sidebar-tab-duplicate', tabIds.length > 1);
         });
       });
-      tabsCountByWindow.forEach((tabsCount, windowId) => {
-        const windowElement = $(getWindowElement(windowId));
-        const windowModel = model.windows.get(windowId);
-        windowElement.children('.sidebar-window-anchor').text(windowModel.text + ' (' + tabsCount + ')');
-        windowModel.tabsCount = tabsCount;
+      model.forEachWindow(windowModel => {
+        const windowElement = $(getWindowElement(windowModel.windowId));
+        windowElement.children('.sidebar-window-anchor').text(windowModel.text + ' (' + windowModel.tabsCount + ')');
       });
-      document.title = 'Chrome - Tabs Lord (' + model.tabs.size + ')';
+      document.title = 'Chrome - Tabs Lord (' + model.getTabsCount() + ')';
     }, 100);
   }
 
@@ -339,14 +276,14 @@ function onReady() {
     chrome.runtime.sendMessage('klbibkeccnjlkjkiokjodocebajanakg', message);
   }
 
-  function addWindowNode(windowId, text) {
-    if (!model.windows.has(windowId)) {
+  function addWindowNode(windowId, windowTitle) {
+    if (!model.windowModelExists(windowId)) {
       templateWindowNode.clone()
         .attr('id', 'sidebar-win-' + windowId)
         .appendTo(windowsListElement)
         .children('.sidebar-window-anchor')
-        .text(text + '(1)');
-      model.windows.set(windowId, {windowId: windowId, text: text});
+        .text(windowTitle + ' (1)');
+      model.addWindowModel(windowId, windowTitle);
       updateView();
     }
   }
@@ -356,36 +293,28 @@ function onReady() {
     if (windowElement) {
       windowElement.remove();
     }
-    const tabIdsToDelete = getTabIdsForWindow(windowId);
-    tabIdsToDelete.forEach(tabId => {
-      model.tabs.delete(tabId);
-    });
-    model.windows.delete(windowId);
+    model.deleteWindowModel(windowId);
   }
 
-  function addTab(windowId, tabId, pos, text, icon, url) {
-    if (model.windows.has(windowId)) {
+  function addTab(windowId, tabId, pos, tabTitle, tabIcon, tabUrl) {
+    if (model.windowModelExists(windowId)) {
       const windowElement = getWindowElement(windowId);
       const tabElement = templateTabNode.clone()
         .attr('id', 'sidebar-tab-' + tabId)
         .appendTo($(windowElement)
         .children('.sidebar-tabs-list'));
-      tabElement.children('.sidebar-tab-anchor').text(text);
-      tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + icon + ')');
+      tabElement.children('.sidebar-tab-anchor').text(tabTitle);
+      tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + tabIcon + ')');
         // Model update
-      const tabModel = {windowId: windowId, tabId: tabId, text: text, icon: icon, url: url, selected: false};
-      model.tabs.set(tabId, tabModel);
+      model.addTabModel(windowId, tabId, tabTitle, tabIcon, tabUrl, false);
       updateView();
     }
   }
 
   function removeTab(tabId) {
-    const tabModel = model.tabs.get(tabId);
-    if (tabModel) {
-      model.tabs.delete(tabId);
-      const tabElement = getTabElement(tabId);
-      tabElement.remove();
-    }
+    model.deleteTabModel(tabId);
+    const tabElement = getTabElement(tabId);
+    tabElement.remove();
     updateView();
   }
 
@@ -393,15 +322,15 @@ function onReady() {
     const tabElement = getTabElement(tabId);
     const targetWindowElement = getWindowElement(targetWindowId);
     targetWindowElement.children[4].insertBefore(tabElement.parentNode.removeChild(tabElement), targetWindowElement.children[4].children[pos]);
-    model.tabs.get(tabId).windowId = targetWindowId;
+    model.updateTabModel(tabId, {windowId: targetWindowId});
     updateView();
   }
 
   function search(searchPattern) {
       // TODO Optimize to do DOM changes only when required
     const windowsWithVisibleTabs = new Map();
-    model.tabs.forEach((tabModel, tabId) => {
-      const tabElement = getTabElement(tabId);
+    model.forEachTab(tabModel => {
+      const tabElement = getTabElement(tabModel.tabId);
       if (searchPattern.length === 0) { // making visible due to search reset
         tabElement.classList.remove('sidebar-tab-hidden');
         tabElement.classList.remove('sidebar-tab-search-match');
@@ -417,9 +346,9 @@ function onReady() {
         tabElement.classList.remove('sidebar-tab-search-match');
       }
     });
-    model.windows.forEach((windowModel, windowId) => {
-      const windowElement = $(getWindowElement(windowId));
-      const visibleTabsCount = windowsWithVisibleTabs.get(windowId) || 0;
+    model.forEachWindow(windowModel => {
+      const windowElement = $(getWindowElement(windowModel.windowId));
+      const visibleTabsCount = windowsWithVisibleTabs.get(windowModel.windowId) || 0;
       windowElement.toggleClass('sidebar-window-hidden', visibleTabsCount === 0);
       let windowText;
       if (visibleTabsCount < windowModel.tabsCount) {
@@ -474,23 +403,24 @@ function onReady() {
 
   function onTabUpdated(tabId, changeInfo) {
     log('Tab updated', tabId, changeInfo);
-    // TODO rethink - could be too much overhead
     const tabElement = $(getTabElement(tabId));
-    const tabModel = model.tabs.get(tabId);
+    const tabModel = model.getTabModel(tabId);
     if (tabModel) {
+      const updateInfo = {};
       if (changeInfo.url) {
-        tabModel.url = changeInfo.url;
+        updateInfo.url = changeInfo.url;
       }
       const tabTitle = changeInfo.title;
       if (tabTitle && tabModel.title !== tabTitle) {
-        tabModel.title = tabTitle;
+        updateInfo.title = tabTitle;
         tabElement.children('.sidebar-tab-anchor').text(tabTitle);
       }
       const favIconUrl = changeInfo.favIconUrl;
       if (favIconUrl && tabModel.favIconUrl !== favIconUrl) {
-        tabModel.favIconUrl = favIconUrl;
-        tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + correctFavIconUrl(favIconUrl) + ')');
+        updateInfo.favIconUrl = correctFavIconUrl(favIconUrl);
+        tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + favIconUrl + ')');
       }
+      model.updateTabModel(tabId, updateInfo);
     }
     updateView();
   }
@@ -516,7 +446,8 @@ function onReady() {
     log('Tab activated', activeInfo);
     const selectedTabId = activeInfo.tabId;
     log('Selecting tab', selectedTabId);
-    model.tabs.forEach((tabModel, tabId) => {
+    model.forEachTab(tabModel => {
+      const tabId = tabModel.tabId;
       if (tabId !== selectedTabId && tabModel.selected) {
         log('Deselecting tab', tabId, tabModel);
         const tabElement = getTabElement(tabId);
@@ -525,13 +456,15 @@ function onReady() {
       }
     });
     const tabElement = getTabElement(selectedTabId);
-    tabElement.children[0].classList.add('sidebar-tab-selected');
-    model.tabs.get(selectedTabId).selected = true;
-    $(tabElement).parents('.sidebar-window-node').addClass('sidebar-window-node-expanded').removeClass('sidebar-window-node-collapsed');
-    if (!$(tabElement).visible()) {
-      const offset = $(tabElement).offset();
-      if (offset) {
-        jQuery(document).scrollTop($(tabElement).offset().top - 25);
+    if (tabElement) {
+      tabElement.children[0].classList.add('sidebar-tab-selected');
+      model.updateTabModel(selectedTabId, {selected: true});
+      $(tabElement).parents('.sidebar-window-node').addClass('sidebar-window-node-expanded').removeClass('sidebar-window-node-collapsed');
+      if (!$(tabElement).visible()) {
+        const offset = $(tabElement).offset();
+        if (offset) {
+          jQuery(document).scrollTop($(tabElement).offset().top - 25);
+        }
       }
     }
   }
@@ -550,4 +483,148 @@ function onReady() {
     const searchText = searchBox.val().toLowerCase();
     search(searchText);
   });
+}
+
+function Model() {
+  'use strict';
+  const _windows = new Map();
+  const _tabs = new Map();
+
+  function normalizeUrlForDuplicatesFinding(url) {
+    if (url) {
+      let pos = url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=');
+      if (pos === 0) {
+        url = url.substring(71);
+      }
+      pos = url.indexOf('#');
+      if (pos >= 0) {
+        url = url.substring(0, pos);
+      }
+      pos = url.indexOf('http://');
+      if (pos === 0) {
+        url = url.substring(7);
+      }
+      pos = url.indexOf('https://');
+      if (pos === 0) {
+        url = url.substring(8);
+      }
+    }
+    return url;
+  }
+
+  function isHibernatedUrl(url) {
+    return url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=') === 0;
+  }
+
+  function generateGuid() {
+    function s4() {
+      return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+    }
+    return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+  }
+
+  return {
+    windowModelExists: function(windowId) {
+      return _windows.has(windowId);
+    },
+    getWindowModel: function(windowId) {
+      const windowModel = Object.assign({}, _windows.get(windowId));
+      Object.freeze(windowModel);
+      return windowModel;
+    },
+    addWindowModel: function(windowId, windowTitle, persistentId) {
+      _windows.set(windowId, {windowId: windowId, text: windowTitle, persistentId: (persistentId || generateGuid())});
+    },
+    updateWindowModel: function(windowId, updateInfo) {
+      const windowModel = _windows.get(windowId);
+      if (updateInfo.text) {
+        windowModel.text = updateInfo.text;
+      }
+    },
+    deleteWindowModel: function(windowId) {
+      _windows.delete(windowId);
+      _tabs.forEach(tabModel => {
+        if (tabModel.windowId === windowId) {
+          this.deleteTabModel(tabModel.id);
+        }
+      });
+    },
+    forEachWindow: function(callback) {
+      _windows.forEach(windowModel => callback(windowModel));
+    },
+    getTabModel: function(tabId) {
+      const tabModel = Object.assign({}, _tabs.get(tabId));
+      Object.freeze(tabModel);
+      return tabModel;
+    },
+    getTabsCount: function() {
+      return _tabs.size;
+    },
+    addTabModel: function(windowId, tabId, tabTitle, tabIcon, tabUrl, isTabSelected) {
+      const tabModel = {
+        windowId: windowId,
+        tabId: tabId,
+        text: tabTitle,
+        icon: tabIcon,
+        url: tabUrl,
+        normalizedUrl: normalizeUrlForDuplicatesFinding(tabUrl),
+        selected: isTabSelected,
+        hibernated: tabUrl && isHibernatedUrl(tabUrl)};
+      _tabs.set(tabId, tabModel);
+      const windowModel = _windows.get(windowId);
+      windowModel.tabsCount = (windowModel.tabsCount || 0) + 1;
+    },
+    deleteTabModel: function(tabId) {
+      const tabModel = _tabs.get(tabId);
+      const windowModel = _windows.get(tabModel.windowId);
+      windowModel.tabsCount = (windowModel.tabsCount || 0) - 1;
+      _tabs.delete(tabId);
+    },
+    updateTabModel: function(tabId, updateInfo) {
+      const tabModel = _tabs.get(tabId);
+      if (!tabModel) { // skipping tabs which are not tracked - e.g. Tabs Lord popup itself
+        return;
+      }
+      if (updateInfo.url) {
+        tabModel.url = updateInfo.url;
+        tabModel.normalizedUrl = normalizeUrlForDuplicatesFinding(tabModel.url);
+        tabModel.hibernated = tabModel.url && isHibernatedUrl(tabModel.url);
+      }
+      if (updateInfo.title) {
+        tabModel.title = updateInfo.title;
+      }
+      if (updateInfo.favIconUrl) {
+        tabModel.favIconUrl = updateInfo.favIconUrl;
+      }
+      if (updateInfo.selected) {
+        tabModel.selected = updateInfo.selected;
+      }
+      if (updateInfo.windowId) {
+        tabModel.windowId = updateInfo.windowId;
+      }
+    },
+    getSelectedTabIds: function() {
+      const selectedTabIds = [];
+      _tabs.forEach(tabModel => {
+        if (tabModel.selected) {
+          selectedTabIds.push(tabModel.tabId);
+        }
+      });
+      return selectedTabIds;
+    },
+    forEachTab: function(callback) {
+      _tabs.forEach((tabModel) => callback(tabModel));
+    },
+    forEachTabByUrl: function(callback) {
+      const tabIdsByUrl = new Map();
+      _tabs.forEach(tabModel => {
+        const tabIds = tabIdsByUrl.get(tabModel.normalizedUrl) || [];
+        tabIds.push(tabModel.tabId);
+        tabIdsByUrl.set(tabModel.normalizedUrl, tabIds);
+      });
+      tabIdsByUrl.forEach(tabIds => callback(tabIds));
+    }
+  };
 }
