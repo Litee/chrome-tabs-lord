@@ -176,6 +176,7 @@ function onReady() {
     }).addClass('sidebar-window-title-edit');
     windowElement.children('.sidebar-window-icon-expand-collapse').after(inputElement);
     inputElement.focus();
+    inputElement.select();
   }
 
   function stopWindowNodeEditByGuid(windowGuid, newText) {
