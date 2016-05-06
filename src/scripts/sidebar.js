@@ -141,7 +141,7 @@ function onReady() {
     else { // go to sleep
       let windowTitle = windowModel.text;
       if (windowTitle === 'Window') {
-        windowTitle = prompt('Enter window title', '');
+        windowTitle = prompt('Enter window title to distinguish between hibernated items', '');
         if (!windowTitle) {
           return;
         }
