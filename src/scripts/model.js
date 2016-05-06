@@ -16,22 +16,28 @@ function Model() {
     debug('State loaded from localStorage', _stateLoadedOnStart);
   }
 
+  let _persistTimer;
+
   function persist() {
-    log('Saving state...');
-    const state = {
-      windows: Array.from(_windows.values()).map(windowModel => {
-        const windowFirstTabModel = getTabsByWindowGuid(windowModel.windowGuid)[0];
-        return Object.assign({firstTabUrl: windowFirstTabModel ? windowFirstTabModel.url : null}, windowModel);
-      }),
-      tabs: Array.from(_tabs.values())
-    };
-    const newStateAsString = JSON.stringify(state);
-    if (newStateAsString !== _savedStateAsString) {
-      localStorage.setItem('tabs-lord-state', newStateAsString);
-      _savedStateAsString = newStateAsString;
-      log('State saved', state);
+    if (_persistTimer) {
+      clearTimeout(_persistTimer);
     }
-    debug('Initial state', _stateLoadedOnStart);
+    _persistTimer = setTimeout(() => {
+      log('Saving state...');
+      const state = {
+        windows: Array.from(_windows.values()).map(windowModel => {
+          const windowFirstTabModel = getTabsByWindowGuid(windowModel.windowGuid)[0];
+          return Object.assign({firstTabUrl: windowFirstTabModel ? windowFirstTabModel.url : null}, windowModel);
+        }),
+        tabs: Array.from(_tabs.values())
+      };
+      const newStateAsString = JSON.stringify(state);
+      if (newStateAsString !== _savedStateAsString) {
+        localStorage.setItem('tabs-lord-state', newStateAsString);
+        _savedStateAsString = newStateAsString;
+        log('State saved', state);
+      }
+    }, 500);
   }
 
   function restoreHibernatedWindowsAndTabs() {

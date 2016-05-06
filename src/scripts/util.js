@@ -1,4 +1,4 @@
-const LOG = true;
+const LOG = false;
 
 function debug() {
   'use strict';
@@ -16,8 +16,6 @@ function log() {
 
 function warn() {
   'use strict';
-  if (LOG) {
-    console.warn.apply(console, arguments);
-  }
+  console.warn.apply(console, arguments);
 }
 
