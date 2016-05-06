@@ -29,7 +29,7 @@ function onReady() {
   log('Parsing existing windows...');
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, windowsArr => {
     windowsArr.forEach(window => {
-      setTimeout(() => {
+      setTimeout(() => { // Using timeout to fix weird flickering
         log('Populating window', window);
         onChromeWindowCreated(window, model.suggestWindowTitle(window.tabs[0].url));
         window.tabs.forEach(tab => {
@@ -37,6 +37,9 @@ function onReady() {
           onChromeTabCreated(tab);
         });
       }, 1);
+    });
+    setTimeout(() => { // Using timeout to avoid restoring hibernated windows before primary onces
+      model.restoreHibernatedWindowsAndTabs();
     });
     log('Existing windows parsed!');
   });
@@ -121,43 +124,57 @@ function onReady() {
     const windowModel = model.getWindowModelByGuid(windowGuid);
     if (windowModel.hibernated) { // wake up!
       const tabModels = model.getTabsByWindowGuid(windowModel.windowGuid);
+      debug('Restoring window model', windowModel, tabModels);
       chrome.windows.create({
         type: 'normal',
-        url: tabModels[0].url
+        focused: true,
+        url: tabModels.length > 0 ? tabModels[0].url : null
       }, window => {
+        debug('Window restored', window, windowModel);
         const newWindowModel = model.getWindowModelById(window.id);
-        model.updateWindowModelByGuid(newWindowModel.windowGuid, {text: windowModel.text});
+        if (newWindowModel) {
+          model.updateWindowModelByGuid(newWindowModel.windowGuid, {title: windowModel.title});
+        }
         tabModels.slice(1).forEach(tabModel => {
+          debug('Restoring tab model', tabModel);
           chrome.tabs.create({
             windowId: window.id,
-            url: tabModel.url
+            url: tabModel.url,
+            active: false
           }, tab => {
+            debug('Tab restored', tab, tabModel);
             model.deleteTabModelByGuid(tabModel.tabGuid);
           });
         });
         model.deleteWindowModelByGuid(windowGuid);
+        updateView();
       });
     }
     else { // go to sleep
-      let windowTitle = windowModel.text;
+      const unhibernatedWindowsCount = model.getWindowModels().filter(_windowModel => !_windowModel.hibernated).length;
+      if (unhibernatedWindowsCount === 1) {
+        // TODO Disable hibernation if the last window
+        return;
+      }
+      let windowTitle = windowModel.title;
       if (windowTitle === 'Window') {
         windowTitle = prompt('Enter window title to distinguish between hibernated items', '');
         if (!windowTitle) {
           return;
         }
       }
-      model.updateWindowModelByGuid(windowGuid, {text: windowTitle, hibernated: true});
+      model.updateWindowModelByGuid(windowGuid, {title: windowTitle, hibernated: true});
       chrome.windows.remove(windowModel.windowId);
       const windowElement = getElementByGuid(windowModel.windowGuid);
       windowElement.addClass('sidebar-window-hibernated');
+      updateView();
     }
-    updateView();
   }
 
   function startWindowNodeEdit(windowElement) {
     sidebarContainer.children('input').remove(); // Cleaning up just in case
     const windowGuid = windowElement[0].id;
-    const oldText = model.getWindowModelByGuid(windowGuid).text;
+    const oldText = model.getWindowModelByGuid(windowGuid).title;
     windowElement.children('.sidebar-window-row').hide();
     windowElement.children('.sidebar-window-anchor').hide();
     const inputElement = $('<input>', {
@@ -184,7 +201,7 @@ function onReady() {
       newText = 'Window';
     }
     const windowNodeElement = getElementByGuid(windowGuid);
-    model.updateWindowModelByGuid(windowGuid, {text: newText});
+    model.updateWindowModelByGuid(windowGuid, {title: newText});
     windowNodeElement.children('.sidebar-window-row').show();
     windowNodeElement.children('.sidebar-window-anchor').show();
     windowNodeElement.children('input').remove();
@@ -289,7 +306,7 @@ function onReady() {
     model.getWindowModels().forEach(windowModel => {
       const menuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
       const firstTabModel = model.getTabsByWindowGuid(windowModel.windowGuid)[0];
-      const menuText = windowModel.text === 'Window' ? 'With tab "' + firstTabModel.text + '"' : windowModel.text;
+      const menuText = windowModel.title === 'Window' ? 'With tab "' + firstTabModel.title + '"' : windowModel.title;
       $('<a>').addClass('sidebar-context-menu-item-anchor')
       .attr('href', '#')
       .text(menuText)
@@ -347,7 +364,7 @@ function onReady() {
       });
       model.getWindowModels().forEach(windowModel => {
         const windowElement = getElementByGuid(windowModel.windowGuid);
-        windowElement.children('.sidebar-window-anchor').text(windowModel.text + ' (' + windowModel.tabsCount + ')');
+        windowElement.children('.sidebar-window-anchor').text(windowModel.title + ' (' + windowModel.tabsCount + ')');
       });
       document.title = 'Chrome - Tabs Lord (' + model.getTabsCount() + ')';
     }, 100);
@@ -362,10 +379,12 @@ function onReady() {
     debug('onWindowAddedToModel', windowModel);
     templateWindowNode.clone()
     .attr('id', windowModel.windowGuid)
-    .appendTo(windowsListElement)
     .toggleClass('sidebar-window-hibernated', windowModel.hibernated)
+    .toggleClass('sidebar-window-node-collapsed', windowModel.hibernated)
+    .toggleClass('sidebar-window-node-expanded', !windowModel.hibernated)
+    .appendTo(windowsListElement)
     .children('.sidebar-window-anchor')
-    .text(windowModel.text + ' (' + windowModel.tabsCount + ')');
+    .text(windowModel.title + ' (' + windowModel.tabsCount + ')');
     updateView();
   }
 
@@ -381,7 +400,7 @@ function onReady() {
     const tabsListElement = windowElement.children('.sidebar-tabs-list')[0];
     const tabElement = templateTabNode.clone()
       .attr('id', tabModel.tabGuid);
-    tabElement.children('.sidebar-tab-anchor').text(tabModel.text);
+    tabElement.children('.sidebar-tab-anchor').text(tabModel.title);
     tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + tabModel.icon + ')');
     tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
     tabsListElement.insertBefore(tabElement[0], tabsListElement.children[tabModel.index]);
@@ -416,7 +435,7 @@ function onReady() {
         tabElement.removeClass('sidebar-tab-search-match');
         windowsWithVisibleTabs.set(tabModel.windowGuid, (windowsWithVisibleTabs.get(tabModel.windowGuid) || 0) + 1);
       }
-      else if (tabModel.text.toLowerCase().indexOf(searchPattern) >= 0 || tabModel.url.toLowerCase().indexOf(searchPattern) >= 0) { // showing as match
+      else if (tabModel.title.toLowerCase().indexOf(searchPattern) >= 0 || tabModel.url.toLowerCase().indexOf(searchPattern) >= 0) { // showing as match
         tabElement.removeClass('sidebar-tab-hidden');
         tabElement.addClass('sidebar-tab-search-match');
         windowsWithVisibleTabs.set(tabModel.windowGuid, (windowsWithVisibleTabs.get(tabModel.windowGuid) || 0) + 1);
@@ -432,10 +451,10 @@ function onReady() {
       windowElement.toggleClass('sidebar-window-hidden', visibleTabsCount === 0);
       let windowText;
       if (visibleTabsCount < windowModel.tabsCount) {
-        windowText = windowModel.text + ' (' + visibleTabsCount + '/' + windowModel.tabsCount + ')';
+        windowText = windowModel.title + ' (' + visibleTabsCount + '/' + windowModel.tabsCount + ')';
       }
       else {
-        windowText = windowModel.text + ' (' + windowModel.tabsCount + ')';
+        windowText = windowModel.title + ' (' + windowModel.tabsCount + ')';
       }
       windowElement.children('.sidebar-window-anchor').text(windowText);
     });
@@ -551,6 +570,10 @@ function onReady() {
     log('Selecting tab', activatedTabModel);
     $('.sidebar-tab-row').removeClass('sidebar-tab-selected'); // removing selection from all nodes
     model.unselectAllTabs();
+    if (!activatedTabModel) {
+      warn('Could not find active tab model', activeInfo);
+      return;
+    }
     const tabElement = getElementByGuid(activatedTabModel.tabGuid);
     if (tabElement) {
       tabElement.children('.sidebar-tab-row').addClass('sidebar-tab-selected');

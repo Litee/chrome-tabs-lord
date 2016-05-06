@@ -85,7 +85,7 @@
 	opacity: 0.5;
 }
 
-.sidebar-window-hibernated {
+.sidebar-window-hibernated .sidebar-window-anchor {
 	font-style: italic;
 }
 

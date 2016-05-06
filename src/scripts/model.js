@@ -1,27 +1,19 @@
 function Model() {
   'use strict';
+
+  log('Initializing model...');
+
   const _windows = new Map();
   const _tabs = new Map();
+  const HIBERNATED_TAB_ID = -1;
+  const HIBERNATED_WINDOW_ID = -1;
   let _savedStateAsString;
-  let _windowsFromPreviousSession;
+  let _stateLoadedOnStart;
 
   _savedStateAsString = localStorage.getItem('tabs-lord-state');
   if (_savedStateAsString) {
-    const state = JSON.parse(_savedStateAsString);
-    state.windows.filter(windowModel => windowModel.hibernated).forEach(windowModel => {
-      log('Restoring window from state', windowModel);
-      addWindowModel(windowModel.windowGuid, -1, windowModel.text, true);
-    });
-    _windowsFromPreviousSession = state.windows.filter(windowModel => !windowModel.hibernated);
-    state.tabs.forEach(tabModel => {
-      const windowModel = getWindowModelByGuid(tabModel.windowGuid);
-      if (windowModel) {
-        if (windowModel.hibernated) {
-          log('Restoring tab from state', tabModel);
-          addTabModel(tabModel.windowId, tabModel.windowGuid, -1, tabModel.tabGuid, tabModel.text, tabModel.icon, tabModel.url, tabModel.index);
-        }
-      }
-    });
+    _stateLoadedOnStart = JSON.parse(_savedStateAsString);
+    debug('State loaded from localStorage', _stateLoadedOnStart);
   }
 
   function persist() {
@@ -37,7 +29,26 @@ function Model() {
     if (newStateAsString !== _savedStateAsString) {
       localStorage.setItem('tabs-lord-state', newStateAsString);
       _savedStateAsString = newStateAsString;
+      log('State saved', state);
     }
+    debug('Initial state', _stateLoadedOnStart);
+  }
+
+  function restoreHibernatedWindowsAndTabs() {
+    const hibernatedWindowsFromPreviousSession = _stateLoadedOnStart.windows.filter(windowModel => windowModel.hibernated);
+    hibernatedWindowsFromPreviousSession.forEach(windowModel => {
+      log('Restoring window from state', windowModel);
+      addWindowModel(windowModel.windowGuid, HIBERNATED_WINDOW_ID, windowModel.title, true);
+    });
+    _stateLoadedOnStart.tabs.forEach(tabModel => {
+      const windowModel = getWindowModelByGuid(tabModel.windowGuid);
+      if (windowModel) {
+        if (windowModel.hibernated) {
+          log('Restoring tab from state', tabModel);
+          addTabModel(tabModel.windowId, tabModel.windowGuid, HIBERNATED_TAB_ID, tabModel.tabGuid, tabModel.title, tabModel.icon, tabModel.url, tabModel.index);
+        }
+      }
+    });
   }
 
   function saveToHistory(tabModel) {
@@ -95,13 +106,15 @@ function Model() {
   }
 
   function suggestWindowTitle(firstTabUrl) {
-      const bestMatch = _windowsFromPreviousSession.find(windowModel => windowModel.firstTabUrl === firstTabUrl);
+    if (firstTabUrl) {
+      const bestMatch = _stateLoadedOnStart.windows.find(windowModel => windowModel.firstTabUrl === firstTabUrl && !windowModel.hibernated);
       if (bestMatch) {
         log('Window from previous session found', bestMatch);
-        return bestMatch.text;
+        return bestMatch.title;
       }
-      return 'Window';
     }
+    return 'Window';
+  }
 
   /**** Tabs ****/
 
@@ -120,16 +133,17 @@ function Model() {
   }
 
   function addWindowModel(windowGuid, windowId, windowTitle, isHibernated) {
-    const windowModel = {windowId: windowId, text: windowTitle, windowGuid: (windowGuid || generateGuid()), hibernated: (isHibernated || false)};
-    _windows.set(windowId, windowModel);
+    const validWindowGuid = (windowGuid || generateGuid());
+    const windowModel = {windowId: windowId, title: windowTitle, windowGuid: validWindowGuid, hibernated: (isHibernated || false)};
+    _windows.set(validWindowGuid, windowModel);
     persist();
     $(document).trigger('tabsLord:windowAddedToModel', [windowModel]);
   }
 
   function updateWindowModelByGuid(windowGuid, updateInfo) {
     const foundWindowModel = Array.from(_windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
-    if (updateInfo.text) {
-      foundWindowModel.text = updateInfo.text;
+    if (updateInfo.title) {
+      foundWindowModel.title = updateInfo.title;
     }
     if (updateInfo.hibernated !== undefined) {
       foundWindowModel.hibernated = true;
@@ -142,9 +156,9 @@ function Model() {
 
   function deleteWindowModelByGuid(windowGuid) {
     const windowModel = getWindowModelByGuid(windowGuid);
-    _windows.delete(windowModel.windowId);
+    _windows.delete(windowGuid);
     _tabs.forEach(tabModel => {
-      if (tabModel.windowId === windowModel.windowId) {
+      if (tabModel.windowGuid === windowGuid) {
         this.deleteTabModelByGuid(tabModel.tabGuid);
       }
     });
@@ -155,7 +169,8 @@ function Model() {
   /**** Tabs ****/
 
   function getTabModelById(tabId) {
-    return makeImmutable(_tabs.get(tabId));
+    const foundTabModel = Array.from(_tabs.values()).find(tabModel => tabModel.tabId === tabId);
+    return makeImmutable(foundTabModel);
   }
 
   function getTabModelByGuid(tabGuid) {
@@ -177,12 +192,13 @@ function Model() {
 
   function addTabModel(windowId, windowGuid, tabId, tabGuid, tabTitle, tabIcon, tabUrl, tabIndex, isTabSelected, isTabAudible) {
     debug('Adding tab model', arguments);
+    const validTabGuid = tabGuid || generateGuid();
     const tabModel = {
       windowId: windowId,
       windowGuid: windowGuid,
       tabId: tabId,
-      tabGuid: tabGuid || generateGuid(),
-      text: tabTitle,
+      tabGuid: validTabGuid,
+      title: tabTitle,
       icon: tabIcon,
       url: tabUrl,
       index: tabIndex,
@@ -190,15 +206,9 @@ function Model() {
       selected: isTabSelected,
       hibernated: tabUrl && isHibernatedUrl(tabUrl),
       audible: isTabAudible};
-    _tabs.set(tabId, tabModel);
+    _tabs.set(validTabGuid, tabModel);
     const windowModel = Array.from(_windows.values()).find(_windowModel => _windowModel.windowGuid === windowGuid);
     windowModel.tabsCount = (windowModel.tabsCount || 0) + 1;
-/*    if (tabIndex === 0 && _windowsFromPreviousSession) {
-      const suggestedWindowTitle = _windowsFromPreviousSession.find(windowModel => windowModel.firstTabUrl = tabUrl);
-      if (suggestedWindowTitle) {
-        windowModel.text = suggestedWindowTitle;
-      }
-    }*/
     persist();
     $(document).trigger('tabsLord:tabAddedToModel', [tabModel]);
   }
@@ -233,12 +243,12 @@ function Model() {
     if (!tabModel) { // Can be deleted by async window deletion
       return;
     }
-    const windowModel = _windows.get(tabModel.windowId);
+    const windowModel = _windows.get(tabModel.windowGuid);
     if (windowModel) { // Can be delelted by async window deletion
       windowModel.tabsCount = (windowModel.tabsCount || 0) - 1;
     }
     saveToHistory(tabModel);
-    _tabs.delete(tabModel.tabId);
+    _tabs.delete(tabGuid);
     persist();
   }
 
@@ -265,6 +275,7 @@ function Model() {
     getTabsByWindowGuid,
     unselectAllTabs,
     persist,
-    suggestWindowTitle
+    suggestWindowTitle,
+    restoreHibernatedWindowsAndTabs
   };
 }
