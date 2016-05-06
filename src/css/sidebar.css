@@ -85,6 +85,12 @@
 	opacity: 0.5;
 }
 
+.sidebar-window-icon-sleep {
+    background-image: url("/images/sleep.png");
+	float: right;
+	opacity: 0.5;
+}
+
 .sidebar-tab-node {
 	min-height: 18px;
     line-height: 18px;

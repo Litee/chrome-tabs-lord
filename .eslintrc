@@ -3,7 +3,10 @@
     "$": true,
     "chrome": true,
     "jQuery": true,
-    "log": true
+    "log": true,
+    "debug": true,
+    "warn": true,
+    "Model": true
   },
   "rules": {
     "indent": [
