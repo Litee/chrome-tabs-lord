@@ -16,6 +16,7 @@ function onReady() {
   const templateTabNode = $('<li>').addClass('sidebar-tab-node');
   $('<div>').addClass('sidebar-tab-row').text(' ').appendTo(templateTabNode);
   $('<span>').addClass('sidebar-tab-favicon').appendTo(templateTabNode);
+  $('<span>').addClass('sidebar-tab-icon').addClass('sidebar-tab-icon-audible').hide().appendTo(templateTabNode);
   $('<a>').addClass('sidebar-tab-anchor').attr('href', '#').attr('tabIndex', -1).appendTo(templateTabNode);
   $('<span>').addClass('sidebar-tab-icon').addClass('sidebar-tab-icon-close').appendTo(templateTabNode);
 
@@ -296,21 +297,6 @@ function onReady() {
     model.deleteWindowModel(windowId);
   }
 
-  function addTab(windowId, tabId, pos, tabTitle, tabIcon, tabUrl) {
-    if (model.windowModelExists(windowId)) {
-      const windowElement = getWindowElement(windowId);
-      const tabElement = templateTabNode.clone()
-        .attr('id', 'sidebar-tab-' + tabId)
-        .appendTo($(windowElement)
-        .children('.sidebar-tabs-list'));
-      tabElement.children('.sidebar-tab-anchor').text(tabTitle);
-      tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + tabIcon + ')');
-        // Model update
-      model.addTabModel(windowId, tabId, tabTitle, tabIcon, tabUrl, false);
-      updateView();
-    }
-  }
-
   function removeTab(tabId) {
     model.deleteTabModel(tabId);
     const tabElement = getTabElement(tabId);
@@ -393,7 +379,21 @@ function onReady() {
 
   function onTabCreated(tab) {
     log('Tab created', tab);
-    addTab(tab.windowId, tab.id, tab.index, tab.title || 'Loading...', correctFavIconUrl(tab.favIconUrl), tab.url);
+    if (model.windowModelExists(tab.windowId)) {
+      const windowElement = getWindowElement(tab.windowId);
+      const tabElement = templateTabNode.clone()
+        .attr('id', 'sidebar-tab-' + tab.id)
+        .appendTo($(windowElement)
+        .children('.sidebar-tabs-list'));
+      const tabTitle = tab.title || 'Loading...';
+      const tabFavIconUrl = correctFavIconUrl(tab.favIconUrl);
+      tabElement.children('.sidebar-tab-anchor').text(tabTitle);
+      tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + tabFavIconUrl + ')');
+      tabElement.children('.sidebar-tab-icon-audible').toggle(tab.audible);
+        // Model update
+      model.addTabModel(tab.windowId, tab.id, tabTitle, tabFavIconUrl, tab.url, false);
+      updateView();
+    }
   }
 
   function onTabRemoved(tabId, removeInfo) {
@@ -419,6 +419,10 @@ function onReady() {
       if (favIconUrl && tabModel.favIconUrl !== favIconUrl) {
         updateInfo.favIconUrl = correctFavIconUrl(favIconUrl);
         tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + favIconUrl + ')');
+      }
+      if (changeInfo.audible !== undefined) {
+        log('Switching audible icon', changeInfo.audible);
+        tabElement.children('.sidebar-tab-icon-audible').toggle(changeInfo.audible);
       }
       model.updateTabModel(tabId, updateInfo);
     }
