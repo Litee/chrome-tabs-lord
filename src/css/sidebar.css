@@ -85,8 +85,18 @@
 	opacity: 0.5;
 }
 
-.sidebar-window-icon-sleep {
+.sidebar-window-hibernated {
+	font-style: italic;
+}
+
+.sidebar-window-icon-sleep-wake {
     background-image: url("/images/sleep.png");
+	float: right;
+	opacity: 0.5;
+}
+
+.sidebar-window-hibernated .sidebar-window-icon-sleep-wake {
+    background-image: url("/images/wake.png");
 	float: right;
 	opacity: 0.5;
 }
