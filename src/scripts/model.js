@@ -40,6 +40,17 @@ function Model() {
     }
   }
 
+  function saveToHistory(tabModel) {
+    const savedHistoryAsString = localStorage.getItem('tabs-lord-history');
+    const history = savedHistoryAsString ? JSON.parse(savedHistoryAsString) : [];
+    history.push(tabModel);
+    while (history.length > 1000) { // Safeguard
+      history.shift();
+    }
+    const newHistoryAsString = JSON.stringify(history);
+    localStorage.setItem('tabs-lord-history', newHistoryAsString);
+  }
+
   function normalizeUrlForDuplicatesFinding(url) {
     if (url) {
       let pos = url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=');
@@ -226,6 +237,7 @@ function Model() {
     if (windowModel) { // Can be delelted by async window deletion
       windowModel.tabsCount = (windowModel.tabsCount || 0) - 1;
     }
+    saveToHistory(tabModel);
     _tabs.delete(tabModel.tabId);
     persist();
   }
