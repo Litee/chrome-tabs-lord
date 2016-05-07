@@ -1,0 +1,18 @@
+{
+    "compileOnSave": true,
+    "compilerOptions": {
+        "module": "es6",
+        "noImplicitAny": true,
+        "noImplicitUseStrict": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "sourceMap": true,
+        "module": "amd",
+        "noLib": true,
+        "target": "es2015",
+        "outFile": "./scripts/sidebar.js"
+    },
+    "exclude": [
+        "scripts/dts/lib.es6.d.ts"
+    ]
+}
