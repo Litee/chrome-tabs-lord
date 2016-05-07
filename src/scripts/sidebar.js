@@ -70,7 +70,7 @@ function onReady() {
       .on('dblclick.sidebar', '.sidebar-tab-node', $.proxy(e => {
         log('Double-Clicked!', e);
         e.preventDefault();
-        tabNodeDoubleClicked(e);
+        onTabNodeDoubleClicked(e);
       }, this))
       .on('contextmenu.sidebar', '.sidebar-tab-node', $.proxy(e => {
         log('Context menu clicked!', e);
@@ -133,7 +133,7 @@ function onReady() {
         debug('Window restored', window, windowModel);
         const newWindowModel = model.getWindowModelById(window.id);
         if (newWindowModel) {
-          model.updateWindowModelByGuid(newWindowModel.windowGuid, {title: windowModel.title});
+          model.updateWindowModel(newWindowModel.windowGuid, {title: windowModel.title});
         }
         tabModels.slice(1).forEach(tabModel => {
           debug('Restoring tab model', tabModel);
@@ -143,10 +143,10 @@ function onReady() {
             active: false
           }, tab => {
             debug('Tab restored', tab, tabModel);
-            model.deleteTabModelByGuid(tabModel.tabGuid);
+            model.deleteTabModel(tabModel.tabGuid);
           });
         });
-        model.deleteWindowModelByGuid(windowGuid);
+        model.deleteWindowModel(windowGuid);
         updateView();
       });
     }
@@ -163,7 +163,7 @@ function onReady() {
           return;
         }
       }
-      model.updateWindowModelByGuid(windowGuid, {title: windowTitle, hibernated: true});
+      model.updateWindowModel(windowGuid, {title: windowTitle, hibernated: true});
       chrome.windows.remove(windowModel.windowId);
       const windowElement = getElementByGuid(windowModel.windowGuid);
       windowElement.addClass('sidebar-window-hibernated');
@@ -201,7 +201,7 @@ function onReady() {
       newText = 'Window';
     }
     const windowNodeElement = getElementByGuid(windowGuid);
-    model.updateWindowModelByGuid(windowGuid, {title: newText});
+    model.updateWindowModel(windowGuid, {title: newText});
     windowNodeElement.children('.sidebar-window-row').show();
     windowNodeElement.children('.sidebar-window-anchor').show();
     windowNodeElement.children('input').remove();
@@ -242,13 +242,13 @@ function onReady() {
     const tabElement = getElementByGuid(tabGuid);
     if (e.ctrlKey) {
       const newTabSelectedValue = !tabModel.selected;
-      model.updateTabModelByGuid(tabGuid, {selected: newTabSelectedValue});
+      model.updateTabModel(tabGuid, {selected: newTabSelectedValue});
       tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', newTabSelectedValue);
     }
     else if (windowModel.hibernated) {
       $('.sidebar-tab-row').removeClass('sidebar-tab-selected'); // removing selection from all nodes
       model.unselectAllTabs();
-      model.updateTabModelByGuid(tabGuid, {selected: true});
+      model.updateTabModel(tabGuid, {selected: true});
       tabElement.children('.sidebar-tab-row').addClass('sidebar-tab-selected');
     }
     else {
@@ -266,7 +266,7 @@ function onReady() {
     }
   }
 
-  function tabNodeDoubleClicked(e) {
+  function onTabNodeDoubleClicked(e) {
     hideContextMenu();
     const tabNode = e.currentTarget;
     const tabGuid = tabNode.id;
@@ -370,8 +370,8 @@ function onReady() {
     }, 100);
   }
 
-  function sendMessageToGreatSuspenderExtension(tabId, message, callback) {
-    log('Sending message to tab', tabId, message, callback);
+  function sendMessageToGreatSuspenderExtension(tabId, message) {
+    log('Sending message to tab', tabId, message);
     chrome.runtime.sendMessage('klbibkeccnjlkjkiokjodocebajanakg', message);
   }
 
@@ -409,7 +409,7 @@ function onReady() {
   }
 
   function removeTabNodeByGuid(tabGuid) {
-    model.deleteTabModelByGuid(tabGuid);
+    model.deleteTabModel(tabGuid);
     const tabElement = getElementByGuid(tabGuid);
     tabElement.remove();
     updateView();
@@ -421,7 +421,7 @@ function onReady() {
     log('Moving tab', tabGuid, targetWindowGuid, pos, tabElement, targetWindowElement);
     const tabsListElement = targetWindowElement.children('.sidebar-tabs-list')[0];
     tabsListElement.insertBefore(tabElement[0].parentNode.removeChild(tabElement[0]), tabsListElement.children[pos]);
-    model.updateTabModelByGuid(tabGuid, {windowGuid: targetWindowGuid});
+    model.updateTabModel(tabGuid, {windowGuid: targetWindowGuid});
     updateView();
   }
 
@@ -469,7 +469,7 @@ function onReady() {
     log('Window removed', windowId);
     const windowModel = model.getWindowModelById(windowId);
     if (!windowModel.hibernated) {
-      model.deleteWindowModelByGuid(windowModel.windowGuid);
+      model.deleteWindowModel(windowModel.windowGuid);
     }
   }
 
@@ -538,7 +538,7 @@ function onReady() {
         log('Switching audible icon', changeInfo.audible);
         tabElement.children('.sidebar-tab-icon-audible').toggle(changeInfo.audible);
       }
-      model.updateTabModelByGuid(tabModel.tabGuid, updateInfo);
+      model.updateTabModel(tabModel.tabGuid, updateInfo);
     }
     updateView();
   }
@@ -577,7 +577,7 @@ function onReady() {
     const tabElement = getElementByGuid(activatedTabModel.tabGuid);
     if (tabElement) {
       tabElement.children('.sidebar-tab-row').addClass('sidebar-tab-selected');
-      model.updateTabModelByGuid(activatedTabModel.tabGuid, {selected: true});
+      model.updateTabModel(activatedTabModel.tabGuid, {selected: true});
       tabElement.parents('.sidebar-window-node').addClass('sidebar-window-node-expanded').removeClass('sidebar-window-node-collapsed');
       if (!tabElement.visible()) {
         const offset = tabElement.offset();

@@ -146,7 +146,7 @@ function Model() {
     $(document).trigger('tabsLord:windowAddedToModel', [windowModel]);
   }
 
-  function updateWindowModelByGuid(windowGuid, updateInfo) {
+  function updateWindowModel(windowGuid, updateInfo) {
     const foundWindowModel = Array.from(_windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
     if (updateInfo.title) {
       foundWindowModel.title = updateInfo.title;
@@ -160,12 +160,12 @@ function Model() {
     persist();
   }
 
-  function deleteWindowModelByGuid(windowGuid) {
+  function deleteWindowModel(windowGuid) {
     const windowModel = getWindowModelByGuid(windowGuid);
     _windows.delete(windowGuid);
     _tabs.forEach(tabModel => {
       if (tabModel.windowGuid === windowGuid) {
-        this.deleteTabModelByGuid(tabModel.tabGuid);
+        this.deleteTabModel(tabModel.tabGuid);
       }
     });
     persist();
@@ -219,7 +219,7 @@ function Model() {
     $(document).trigger('tabsLord:tabAddedToModel', [tabModel]);
   }
 
-  function updateTabModelByGuid(tabGuid, updateInfo) {
+  function updateTabModel(tabGuid, updateInfo) {
     const tabModel = Array.from(_tabs.values()).find(_tabModel => _tabModel.tabGuid === tabGuid);
     if (!tabModel) { // skipping tabs which are not tracked - e.g. Tabs Lord popup itself
       return;
@@ -244,7 +244,7 @@ function Model() {
     persist();
   }
 
-  function deleteTabModelByGuid(tabGuid) {
+  function deleteTabModel(tabGuid) {
     const tabModel = getTabModelByGuid(tabGuid);
     if (!tabModel) { // Can be deleted by async window deletion
       return;
@@ -268,19 +268,18 @@ function Model() {
     getWindowModelById,
     getWindowModelByGuid,
     addWindowModel,
-    updateWindowModelByGuid,
-    deleteWindowModelByGuid,
+    updateWindowModel,
+    deleteWindowModel,
     getWindowModels,
     getTabModelById,
     getTabModelByGuid,
     getTabModels,
     getTabsCount,
     addTabModel,
-    deleteTabModelByGuid,
-    updateTabModelByGuid,
+    deleteTabModel,
+    updateTabModel,
     getTabsByWindowGuid,
     unselectAllTabs,
-    persist,
     suggestWindowTitle,
     restoreHibernatedWindowsAndTabs
   };
