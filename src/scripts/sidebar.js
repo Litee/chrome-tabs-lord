@@ -400,7 +400,7 @@ function onReady() {
     const tabsListElement = windowElement.children('.sidebar-tabs-list')[0];
     const tabElement = templateTabNode.clone()
       .attr('id', tabModel.tabGuid);
-    tabElement.children('.sidebar-tab-anchor').text(tabModel.title);
+    tabElement.children('.sidebar-tab-anchor').text(tabModel.title).attr('title', tabModel.url);
     tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + tabModel.icon + ')');
     tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
     tabsListElement.insertBefore(tabElement[0], tabsListElement.children[tabModel.index]);
@@ -519,12 +519,13 @@ function onReady() {
     log('Tab updated', tabId, changeInfo);
     const tabModel = model.getTabModelById(tabId);
     if (tabModel) {
+      const tabElement = getElementByGuid(tabModel.tabGuid);
       const updateInfo = {};
       if (changeInfo.url) {
         updateInfo.url = changeInfo.url;
+        tabElement.children('.sidebar-tab-anchor').attr('title', changeInfo.url);
       }
       const tabTitle = changeInfo.title;
-      const tabElement = getElementByGuid(tabModel.tabGuid);
       if (tabTitle && tabModel.title !== tabTitle) {
         updateInfo.title = tabTitle;
         tabElement.children('.sidebar-tab-anchor').text(tabTitle);
