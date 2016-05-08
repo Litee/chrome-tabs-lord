@@ -51,9 +51,9 @@ gulp.task('build-sidebar', () => {
 });
 
 gulp.task('package', () => {
-  return gulp.src(['src/**/*.*', 'LICENSE'])
+  return gulp.src(['dist_exploded/**/*.*', 'LICENSE'])
 		.pipe(zip('tabs-lord-extension-' + new Date().toJSON().replace(new RegExp(':', 'g'), '-') + '.zip'))
-		.pipe(gulp.dest('release'));
+		.pipe(gulp.dest('dist'));
 });
 
 gulp.task('default', ['clean', 'ts-lint', 'build-browser-action', 'build-sidebar', 'copy-other-files']);
