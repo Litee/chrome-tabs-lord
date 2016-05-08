@@ -124,7 +124,11 @@ function onReady() {
       .on('tabsLord:tabAddedToModel', (e, tabModel) => {
         log('Global event: Tab model added', e, tabModel);
         onTabAddedToModel(tabModel);
-      });
+      })
+      .on('click.sidebar', '#sidebar-reset-search-button', $.proxy(e => {
+        $('#sidebar-search-box').val('');
+        search('');
+      }, this));
   }
 
   function snoozeOrWakeWindow(windowNodeElement: JQuery) {
@@ -434,8 +438,11 @@ function onReady() {
   }
 
   function search(searchPattern: string) {
-      // TODO Optimize to do DOM changes only when required
+    // TODO Optimize to do DOM changes only when required
     const windowsWithVisibleTabs = new Map();
+    // TODO Why do I need two classes here?
+    $('#sidebar-reset-search-button').toggleClass('sidebar-reset-search-button-active', searchPattern.length > 0);
+    $('#sidebar-reset-search-button').toggleClass('sidebar-reset-search-button-inactive', searchPattern.length === 0);
     model.getTabModels().forEach(tabModel => {
       const tabElement = getElementByGuid(tabModel.tabGuid);
       if (searchPattern.length === 0) { // making visible due to search reset
@@ -611,7 +618,7 @@ function onReady() {
     });
   }
 
-  const searchBox = $('.sidebar-search-box');
+  const searchBox = $('#sidebar-search-box');
   searchBox.on('input', () => {
     log('Search text changed', searchBox.val());
     const searchText = searchBox.val().toLowerCase();

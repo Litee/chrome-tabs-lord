@@ -30,9 +30,9 @@
 	padding-bottom: 10px;
 }
 
-.sidebar-search-box {
+#sidebar-search-box {
 	position: fixed;
-	width: 350px;
+	width: 340px;
 	top: 0;
 	z-index: 1;
 	height: auto;
@@ -209,4 +209,25 @@
 input.sidebar-window-title-edit {
 	width: 200px;
 	vertical-align: top;
+}
+
+#sidebar-reset-search-button {
+	position: fixed;
+	top: 0;
+	left: 350px;
+	display: inline-block;
+	background-size: auto;
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	width: 24px;
+	height: 24px;
+    background-image: url("/images/reset-search.png");
+}
+
+#sidebar-reset-search-button.sidebar-reset-search-button-active {
+	opacity: 1;
+}
+
+#sidebar-reset-search-button.sidebar-reset-search-button-inactive {
+	opacity: 0.2;
 }
