@@ -373,7 +373,6 @@ function onReady() {
       });
       model.getWindowModels().forEach(windowModel => {
         const windowElement = getElementByGuid(windowModel.windowGuid);
-        const tabsCount = windowModel.tabsCount === undefined ? '?' : windowModel.tabsCount;
         windowElement.children('.sidebar-window-anchor').text(windowModel.title + ' (' + windowModel.tabsCount + ')');
       });
       document.title = 'Chrome - Tabs Lord (' + model.getTabsCount() + ')';

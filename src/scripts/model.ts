@@ -6,7 +6,7 @@ import {log, debug, warn} from './util';
 
 export class Model {
   private _persistTimer: any;
-  private _windows = new Map<string, IWindowModel>();
+  private _windows = new Map<string, IMutableWindowModel>();
   private _tabs = new Map<string, ITabModel>();
   private static HIBERNATED_TAB_ID = -1;
   private static HIBERNATED_WINDOW_ID = -1;
@@ -141,7 +141,7 @@ export class Model {
 
   /**** Windows ****/
 
-  public getWindowModelByGuid(windowGuid: string) {
+  public getWindowModelByGuid(windowGuid: string) : IWindowModel {
     const foundWindowModel = Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
     return this.makeImmutable(foundWindowModel);
   }
@@ -150,12 +150,12 @@ export class Model {
     return Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
   }
 
-  public getWindowModelById(windowId: number) {
+  public getWindowModelById(windowId: number): IWindowModel {
     const foundWindowModel = Array.from(this._windows.values()).find(windowModel => windowModel.windowId === windowId);
     return this.makeImmutable(foundWindowModel);
   }
 
-  public getWindowModels() {
+  public getWindowModels(): IWindowModel[] {
     return Array.from(this._windows.values()).map(windowModel => this.makeImmutable(windowModel));
   }
 
@@ -236,7 +236,7 @@ export class Model {
     tabModel.snoozed = tabUrl && this.isSnoozedUrl(tabUrl);
     tabModel.audible = isTabAudible;
     this._tabs.set(validTabGuid, tabModel);
-    windowModel.tabsCount = (windowModel.tabsCount || 0) + 1;
+    windowModel.incrementTabsCount();
     this.persist();
     $(document).trigger('tabsLord:tabAddedToModel', [tabModel]);
   }
@@ -274,10 +274,7 @@ export class Model {
     if (!tabModel) { // Can be deleted by async window deletion
       return;
     }
-    const windowModel = this._windows.get(tabModel.windowGuid);
-    if (windowModel) { // Can be delelted by async window deletion
-      windowModel.tabsCount = (windowModel.tabsCount || 0) - 1;
-    }
+    tabModel.windowModel.decrementTabsCount();
     this.saveToHistory(tabModel);
     this._tabs.delete(tabGuid);
     this.persist();
@@ -313,6 +310,11 @@ export interface IWindowModel {
   tabsCount: number;
 }
 
+interface IMutableWindowModel extends IWindowModel {
+  incrementTabsCount(): void;
+  decrementTabsCount(): void;
+}
+
 interface IPersistentWindowModel {
   windowGuid: string;
   hibernated: boolean;
@@ -320,13 +322,13 @@ interface IPersistentWindowModel {
   firstTabUrl: string;
 }
 
-class WindowModel implements IWindowModel {
+class WindowModel implements IMutableWindowModel {
   windowGuid: string;
   windowId: number;
   hibernated: boolean;
   title: string;
   firstTabUrl: string;
-  tabsCount: number;
+  tabsCount: number = 0;
 
   constructor(windowGuid: string, windowId: number, windowTitle: string, hibernated: boolean) {
     this.windowGuid = windowGuid;
@@ -335,29 +337,13 @@ class WindowModel implements IWindowModel {
     this.hibernated = hibernated;
   }
 
-/*  public windowGuid(): string {
-    return this._windowGuid;
+  incrementTabsCount(): void {
+    this.tabsCount++;
   }
 
-  public windowId(): number {
-    return this._windowId;
+  decrementTabsCount(): void {
+    this.tabsCount--;
   }
-
-  hibernated(): boolean {
-    return this._hibernated;
-  }
-
-  title(): string {
-    return this._title;
-  }
-
-  firstTabUrl(): string {
-    return this._firstTabUrl;
-  }
-
-  tabsCount(): number {
-    return this._tabsCount;
-  }*/
 }
 
 export interface IPersistentTabModel {
