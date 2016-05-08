@@ -1,16 +1,16 @@
-/// <reference path="./dts/lib.es6.d.ts" />
-/// <reference path="./dts/jquery.d.ts" />
-/// <reference path="./dts/chrome/chrome.d.ts" />
+/// <reference no-default-lib="true"/>
+/// <reference path="../../typings/lib.es6.d.ts" />
+/// <reference path="../../typings/browser.d.ts" />
 
 import {log, debug, warn} from './util';
-import {Model, ITabModel, IWindowModel} from './model';
+import {Model, ITabModel, IWindowModel, TabModelUpdateInfo} from './model';
 
 $(document).ready(onReady);
 
 function onReady() {
   'use strict';
   log('Sidebar view loaded! Reading information about existing windows...');
-  let updateViewTimer: number = null;
+  let updateViewTimer: number = undefined;
 
   const sidebarContainer = $('#sidebar-nodes-container').addClass('tabs-lorg-nav-root');
 
@@ -135,7 +135,7 @@ function onReady() {
       chrome.windows.create({
         type: 'normal',
         focused: true,
-        url: tabModels.length > 0 ? tabModels[0].url : null
+        url: tabModels.length > 0 ? tabModels[0].url : undefined
       }, window => {
         debug('Window restored', window, windowModel);
         const newWindowModel = model.getWindowModelById(window.id);
@@ -180,15 +180,16 @@ function onReady() {
 
   function startWindowNodeEdit(windowElement: JQuery) {
     sidebarContainer.children('input').remove(); // Cleaning up just in case
-    const windowGuid = windowElement[0].id;
+    const windowGuid: string = windowElement[0].id;
     const oldText = model.getWindowModelByGuid(windowGuid).title;
     windowElement.children('.sidebar-window-row').hide();
     windowElement.children('.sidebar-window-anchor').hide();
     const inputElement = $('<input>', {
       'value': oldText,
-      'blur': $.proxy((e: any) => {
-        stopWindowNodeEditByGuid(windowGuid, inputElement.val());
-      }),
+      'blur': () => {
+        const value = inputElement.val();
+        stopWindowNodeEditByGuid(windowGuid, value);
+      },
       'keydown': function(e: any) {
         if (e.which === 27) { // Escape
           stopWindowNodeEditByGuid(windowGuid, oldText);
@@ -469,12 +470,12 @@ function onReady() {
 
   function onChromeWindowCreated(window: chrome.windows.Window) {
     log('Window created', window);
-    onChromeWindowCreatedExt(window)
+    onChromeWindowCreatedExt(window);
   }
 
   function onChromeWindowCreatedExt(window: chrome.windows.Window, suggestedWindowTitle = 'Window') {
     log('Window created', window);
-    model.addWindowModel(null, window.id, suggestedWindowTitle, false);
+    model.addWindowModel(undefined, window.id, suggestedWindowTitle, false);
   }
 
   function onChromeWindowRemoved(windowId: number) {
@@ -511,7 +512,7 @@ function onReady() {
     if (windowModel) {
       const tabTitle = tab.title || 'Loading...';
       const tabFavIconUrl = correctFavIconUrl(tab.favIconUrl);
-      model.addTabModel(tab.windowId, windowModel.windowGuid, tab.id, null, tabTitle, tabFavIconUrl, tab.url, tab.index, false, tab.audible);
+      model.addTabModel(tab.windowId, windowModel.windowGuid, tab.id, undefined, tabTitle, tabFavIconUrl, tab.url, tab.index, false, tab.audible);
     }
     else {
       warn('Window model not found', tab);
@@ -532,7 +533,7 @@ function onReady() {
     const tabModel = model.getTabModelById(tabId);
     if (tabModel) {
       const tabElement = getElementByGuid(tabModel.tabGuid);
-      const updateInfo = {};
+      const updateInfo: TabModelUpdateInfo = {};
       if (changeInfo.url) {
         updateInfo.url = changeInfo.url;
         tabElement.children('.sidebar-tab-anchor').attr('title', changeInfo.url);

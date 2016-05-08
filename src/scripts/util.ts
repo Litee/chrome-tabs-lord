@@ -1,18 +1,20 @@
+/// <reference no-default-lib="true"/>
+/// <reference path="../../typings/lib.es6.d.ts" />
+
 const LOG = true;
 
-export function debug(...args: any[]) {
+export function debug(message?: any, ...additionalParams: any[]) {
   if (LOG) {
-    console.debug(...args);
+    console.debug(message, ...additionalParams);
   }
 }
 
-export function log(...args: any[]) {
+export function log(message?: any, ...additionalParams: any[]) {
   if (LOG) {
-    console.log(...args);
+    console.log(message, ...additionalParams);
   }
 }
 
-export function warn(...args: any[]) {
-  console.warn(...args);
+export function warn(message?: any, ...additionalParams: any[]) {
+  console.warn(message, ...additionalParams);
 }
-

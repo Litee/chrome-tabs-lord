@@ -1,7 +1,8 @@
 /// <reference no-default-lib="true"/>
-/// <reference path="./dts/lib.es6.d.ts" />
+/// <reference path="../../typings/lib.es6.d.ts" />
+/// <reference path="../../typings/browser.d.ts" />
 
-import {log, debug} from './util';
+import {log, debug, warn} from './util';
 
 export class Model {
   private _persistTimer: any;
@@ -31,7 +32,7 @@ export class Model {
       const state = {
         windows: Array.from(this._windows.values()).map(windowModel => {
           const windowFirstTabModel = this.getTabsByWindowGuid(windowModel.windowGuid)[0];
-          return Object.assign({firstTabUrl: windowFirstTabModel ? windowFirstTabModel.url : null}, windowModel);
+          return Object.assign({firstTabUrl: windowFirstTabModel ? windowFirstTabModel.url : undefined}, windowModel);
         }),
         tabs: Array.from(this._tabs.values())
       };
@@ -45,20 +46,24 @@ export class Model {
   }
 
   public restoreHibernatedWindowsAndTabs() {
-    const hibernatedWindowsFromPreviousSession = this._stateLoadedOnStart.windows.filter(windowModel => windowModel.hibernated);
-    hibernatedWindowsFromPreviousSession.forEach((windowModel: IWindowModel) => {
-      log('Restoring window from state', windowModel);
-      this.addWindowModel(windowModel.windowGuid, Model.HIBERNATED_WINDOW_ID, windowModel.title, true);
-    });
-    this._stateLoadedOnStart.tabs.forEach((tabModel: ITabModel) => {
-      const windowModel = this.getWindowModelByGuid(tabModel.windowGuid);
-      if (windowModel) {
-        if (windowModel.hibernated) {
-          log('Restoring tab from state', tabModel);
-          this.addTabModel(tabModel.windowId, tabModel.windowGuid, Model.HIBERNATED_TAB_ID, tabModel.tabGuid, tabModel.title, tabModel.icon, tabModel.url, tabModel.index, false, false);
+    if (this._stateLoadedOnStart && this._stateLoadedOnStart.windows) {
+      const hibernatedWindowsFromPreviousSession = this._stateLoadedOnStart.windows.filter(windowModel => windowModel.hibernated);
+      hibernatedWindowsFromPreviousSession.forEach((windowModel: IWindowModel) => {
+        log('Restoring window from state', windowModel);
+        this.addWindowModel(windowModel.windowGuid, Model.HIBERNATED_WINDOW_ID, windowModel.title, true);
+      });
+    }
+    if (this._stateLoadedOnStart && this._stateLoadedOnStart.tabs) {
+      this._stateLoadedOnStart.tabs.forEach((tabModel: ITabModel) => {
+        const windowModel = this.getWindowModelByGuid(tabModel.windowGuid);
+        if (windowModel) {
+          if (windowModel.hibernated) {
+            log('Restoring tab from state', tabModel);
+            this.addTabModel(tabModel.windowId, tabModel.windowGuid, Model.HIBERNATED_TAB_ID, tabModel.tabGuid, tabModel.title, tabModel.icon, tabModel.url, tabModel.index, false, false);
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   private saveToHistory(tabModel: ITabModel) {
@@ -116,7 +121,7 @@ export class Model {
   }
 
   public suggestWindowTitle(firstTabUrl: string) {
-    if (firstTabUrl) {
+    if (firstTabUrl && this._stateLoadedOnStart && this._stateLoadedOnStart.windows) {
       const bestMatch = this._stateLoadedOnStart.windows.find((windowModel:IWindowModel) => windowModel.firstTabUrl === firstTabUrl && !windowModel.hibernated);
       if (bestMatch) {
         log('Window from previous session found', bestMatch);
@@ -271,6 +276,12 @@ export interface IWindowModelUpdateInfo {
   windowId?: number;
   title?: string;
   hibernated?: boolean;
+}
+
+export interface TabModelUpdateInfo {
+  url?: string;
+  title?: string;
+  favIconUrl?: string;
 }
 
 export interface IWindowModel {

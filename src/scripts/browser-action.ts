@@ -1,10 +1,13 @@
+/// <reference no-default-lib="true"/>
+/// <reference path="../../typings/lib.es6.d.ts" />
+/// <reference path="../../typings/browser.d.ts" />
+
 chrome.browserAction.onClicked.addListener(() => {
-  'use strict';
   const sidebarPageUrl = chrome.extension.getURL('sidebar.html');
 
   console.log('Browser action called!');
 
-  chrome.windows.getCurrent(null, currentWindow => {
+  chrome.windows.getCurrent(undefined, currentWindow => {
     console.log('Last focused window found', currentWindow);
     getOrCreateSidebarWindow(sidebarWindow => {
       updateWindowsPosition(sidebarWindow, currentWindow);
@@ -13,7 +16,7 @@ chrome.browserAction.onClicked.addListener(() => {
 
   chrome.windows.onFocusChanged.addListener(onWindowFocusChanged);
 
-  function onWindowFocusChanged(windowId) {
+  function onWindowFocusChanged(windowId: number) {
     if (windowId !== chrome.windows.WINDOW_ID_NONE) {
       // TODO Scroll to active tab in tree
       chrome.windows.get(windowId, {}, focusedWindow => {
@@ -30,7 +33,7 @@ chrome.browserAction.onClicked.addListener(() => {
     }
   }
 
-  function getOrCreateSidebarWindow(callback) {
+  function getOrCreateSidebarWindow(callback: ICreateSidebarWindowCallback) {
     chrome.tabs.query({url: sidebarPageUrl}, sidebarTabs => {
       console.log('Sidebar tabs found', sidebarTabs);
       if (sidebarTabs.length > 1) {
@@ -55,7 +58,7 @@ chrome.browserAction.onClicked.addListener(() => {
 
 
   let updatingWindowPosition = false;
-  function updateWindowsPosition(sidebarWindow, currentWindow) {
+  function updateWindowsPosition(sidebarWindow: chrome.windows.Window, currentWindow: chrome.windows.Window) {
     if (updatingWindowPosition)
       return;
     updatingWindowPosition = true;
@@ -97,3 +100,7 @@ chrome.browserAction.onClicked.addListener(() => {
     });
   }
 });
+
+interface ICreateSidebarWindowCallback {
+    (window: chrome.windows.Window): void;
+}

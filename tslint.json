@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "quotemark": [true, "single"],
+    "no-arg": true,
+    "no-shadowed-variable": true,
+    "no-null-keyword": true,
+    "no-var-keyword": true,
+    "triple-equals": true,
+    "indent": [true, "spaces"],
+    "no-trailing-whitespace": true,
+    "one-variable-per-declaration": true,
+    "semicolon": [true, "always"],
+    "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore"]
+  }
+}

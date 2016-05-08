@@ -1,0 +1,30 @@
+{
+  "name": "chrome-tabs-lord",
+  "version": "0.1.0",
+  "description": "Chrome browser extension for using vertical tabs IN ADDITION to existing horisonal tabs. Should be useful if you have large number of tabs. Inspired by Sidewise extension, which has closed source code.",
+  "main": "gulpfile.js",
+  "dependencies": {},
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-sourcemaps": "^1.6.0",
+    "gulp-tslint": "^5.0.0",
+    "gulp-typescript": "^2.13.3",
+    "gulp-zip": "^3.2.0",
+    "tslint": "^3.9.0",
+    "typescript": "^1.8.10",
+    "typings": "^0.8.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Litee/chrome-tabs-lord.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Litee/chrome-tabs-lord/issues"
+  },
+  "homepage": "https://github.com/Litee/chrome-tabs-lord#readme"
+}
