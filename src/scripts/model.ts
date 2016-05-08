@@ -53,7 +53,7 @@ export class Model {
     }, 500);
   }
 
-  public restoreHibernatedWindowsAndTabs() {
+  public restoreHibernatedWindowsAndTabs(): void {
     if (this._stateLoadedOnStart && this._stateLoadedOnStart.windows) {
       const hibernatedWindowsFromPreviousSession = this._stateLoadedOnStart.windows.filter(windowModel => windowModel.hibernated);
       hibernatedWindowsFromPreviousSession.forEach((windowModel: IWindowModel) => {
@@ -128,7 +128,7 @@ export class Model {
     }
   }
 
-  public suggestWindowTitle(firstTabUrl: string) {
+  public suggestWindowTitle(firstTabUrl: string): string {
     if (firstTabUrl && this._stateLoadedOnStart && this._stateLoadedOnStart.windows) {
       const bestMatch = this._stateLoadedOnStart.windows.find(windowModel  => windowModel.firstTabUrl === firstTabUrl && !windowModel.hibernated);
       if (bestMatch) {
@@ -146,7 +146,7 @@ export class Model {
     return this.makeImmutable(foundWindowModel);
   }
 
-  private getMutableWindowModelByGuid(windowGuid: string) {
+  private getMutableWindowModelByGuid(windowGuid: string): IMutableWindowModel {
     return Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
   }
 
@@ -159,7 +159,7 @@ export class Model {
     return Array.from(this._windows.values()).map(windowModel => this.makeImmutable(windowModel));
   }
 
-  public addWindowModel(windowGuid: string, windowId: number, windowTitle: string, isHibernated: boolean) {
+  public addWindowModel(windowGuid: string, windowId: number, windowTitle: string, isHibernated: boolean): void {
     const validWindowGuid = (windowGuid || this.generateGuid());
     const windowModel = new WindowModel(validWindowGuid, windowId, windowTitle, isHibernated || false);
     this._windows.set(validWindowGuid, windowModel);
@@ -167,7 +167,7 @@ export class Model {
     $(document).trigger('tabsLord:windowAddedToModel', [windowModel]);
   }
 
-  public updateWindowModel(windowGuid: string, updateInfo: IWindowModelUpdateInfo) {
+  public updateWindowModel(windowGuid: string, updateInfo: IWindowModelUpdateInfo): void {
     const foundWindowModel = Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
     if (updateInfo.title) {
       foundWindowModel.title = updateInfo.title;
@@ -181,7 +181,7 @@ export class Model {
     this.persist();
   }
 
-  public deleteWindowModel(windowGuid: string) {
+  public deleteWindowModel(windowGuid: string): void {
     const windowModel = this.getWindowModelByGuid(windowGuid);
     this._windows.delete(windowGuid);
     this._tabs.forEach(tabModel => {
@@ -195,29 +195,29 @@ export class Model {
 
   /**** Tabs ****/
 
-  public getTabModelById(tabId: number) {
+  public getTabModelById(tabId: number): ITabModel {
     const foundTabModel = Array.from(this._tabs.values()).find(tabModel => tabModel.tabId === tabId);
     return this.makeImmutable(foundTabModel);
   }
 
-  public getTabModelByGuid(tabGuid: string) {
+  public getTabModelByGuid(tabGuid: string): ITabModel {
     const foundTabModel = Array.from(this._tabs.values()).find(tabModel => tabModel.tabGuid === tabGuid);
     return this.makeImmutable(foundTabModel);
   }
 
-  public getTabModels() {
+  public getTabModels(): ITabModel[] {
     return Array.from(this._tabs.values()).map(tabModel => this.makeImmutable(tabModel));
   }
 
-  public getTabsByWindowGuid(windowGuid: string) {
+  public getTabsByWindowGuid(windowGuid: string): ITabModel[] {
     return Array.from(this._tabs.values()).filter(tabModel => tabModel.windowModel.windowGuid === windowGuid).map(tabModel => this.makeImmutable(tabModel));
   }
 
-  public getTabsCount() {
+  public getTabsCount(): number {
     return this._tabs.size;
   }
 
-  public addTabModel(windowGuid: string, tabId: number, tabGuid: string, tabTitle: string, tabIcon: string, tabUrl: string, tabIndex: number, isTabSelected: boolean, isTabAudible: boolean) {
+  public addTabModel(windowGuid: string, tabId: number, tabGuid: string, tabTitle: string, tabIcon: string, tabUrl: string, tabIndex: number, isTabSelected: boolean, isTabAudible: boolean): void {
     debug('Adding tab model', arguments);
     const windowModel = this.getMutableWindowModelByGuid(windowGuid);
     if (!windowModel) {
@@ -241,7 +241,7 @@ export class Model {
     $(document).trigger('tabsLord:tabAddedToModel', [tabModel]);
   }
 
-  public updateTabModel(tabGuid: string, updateInfo: TabModelUpdateInfo) {
+  public updateTabModel(tabGuid: string, updateInfo: TabModelUpdateInfo): void {
     const tabModel = Array.from(this._tabs.values()).find(_tabModel => _tabModel.tabGuid === tabGuid);
     if (!tabModel) { // skipping tabs which are not tracked - e.g. Tabs Lord popup itself
       return;
@@ -269,18 +269,18 @@ export class Model {
     this.persist();
   }
 
-  public deleteTabModel(tabGuid: string) {
+  public deleteTabModel(tabGuid: string): void {
     const tabModel = this.getTabModelByGuid(tabGuid);
     if (!tabModel) { // Can be deleted by async window deletion
       return;
     }
-    tabModel.windowModel.decrementTabsCount();
+    (<IMutableWindowModel>tabModel.windowModel).decrementTabsCount();
     this.saveToHistory(tabModel);
     this._tabs.delete(tabGuid);
     this.persist();
   }
 
-  public unselectAllTabs() {
+  public unselectAllTabs(): void {
     this._tabs.forEach(tabModel => {
       tabModel.selected = false;
     });

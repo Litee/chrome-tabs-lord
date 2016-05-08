@@ -247,14 +247,13 @@ function onReady() {
       warn('Cannot find tab by GUID', tabNode, tabGuid);
       return;
     }
-    const windowModel = model.getWindowModelByGuid(tabModel.windowGuid);
     const tabElement = getElementByGuid(tabGuid);
     if (e.ctrlKey) {
       const newTabSelectedValue = !tabModel.selected;
       model.updateTabModel(tabGuid, {selected: newTabSelectedValue});
       tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', newTabSelectedValue);
     }
-    else if (windowModel && windowModel.hibernated) {
+    else if (tabModel.windowModel && tabModel.windowModel.hibernated) {
       $('.sidebar-tab-row').removeClass('sidebar-tab-selected'); // removing selection from all nodes
       model.unselectAllTabs();
       model.updateTabModel(tabGuid, {selected: true});
@@ -442,12 +441,12 @@ function onReady() {
       if (searchPattern.length === 0) { // making visible due to search reset
         tabElement.removeClass('sidebar-tab-hidden');
         tabElement.removeClass('sidebar-tab-search-match');
-        windowsWithVisibleTabs.set(tabModel.windowGuid, (windowsWithVisibleTabs.get(tabModel.windowGuid) || 0) + 1);
+        windowsWithVisibleTabs.set(tabModel.windowModel.windowGuid, (windowsWithVisibleTabs.get(tabModel.windowModel.windowGuid) || 0) + 1);
       }
       else if (tabModel.title.toLowerCase().indexOf(searchPattern) >= 0 || tabModel.url.toLowerCase().indexOf(searchPattern) >= 0) { // showing as match
         tabElement.removeClass('sidebar-tab-hidden');
         tabElement.addClass('sidebar-tab-search-match');
-        windowsWithVisibleTabs.set(tabModel.windowGuid, (windowsWithVisibleTabs.get(tabModel.windowGuid) || 0) + 1);
+        windowsWithVisibleTabs.set(tabModel.windowModel.windowGuid, (windowsWithVisibleTabs.get(tabModel.windowModel.windowGuid) || 0) + 1);
       }
       else { // hiding as mismatch
         tabElement.addClass('sidebar-tab-hidden');
