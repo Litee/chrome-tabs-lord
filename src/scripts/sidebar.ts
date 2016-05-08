@@ -1,7 +1,7 @@
 /// <reference no-default-lib="true"/>
 /// <reference path="../../typings/lib.es6.d.ts" />
 /// <reference path="../../typings/browser.d.ts" />
-/// <reference path="jquery-visible.d.ts" />
+/// <reference path="./jquery-visible.d.ts" />
 
 import {log, debug, warn} from './util';
 import {Model, ITabModel, IWindowModel, TabModelUpdateInfo} from './model';
@@ -226,8 +226,8 @@ function onReady() {
     const tabGuid = tabNode.id;
     log('Closed tab icon node clicked', tabGuid, tabNode);
     const tabModel = model.getTabModelByGuid(tabGuid);
-    const windowModel = model.getWindowModelByGuid(tabModel.windowGuid);
-    if (windowModel.hibernated) {
+    const windowModel = tabModel.windowModel;
+    if (windowModel && windowModel.hibernated) {
       removeTabNodeByGuid(tabModel.tabGuid);
     }
     else { // Kill real tab
@@ -254,7 +254,7 @@ function onReady() {
       model.updateTabModel(tabGuid, {selected: newTabSelectedValue});
       tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', newTabSelectedValue);
     }
-    else if (windowModel.hibernated) {
+    else if (windowModel && windowModel.hibernated) {
       $('.sidebar-tab-row').removeClass('sidebar-tab-selected'); // removing selection from all nodes
       model.unselectAllTabs();
       model.updateTabModel(tabGuid, {selected: true});
@@ -281,7 +281,7 @@ function onReady() {
     const tabGuid = tabNode.id;
     const tabModel = model.getTabModelByGuid(tabGuid);
     log('Tab node double-clicked', tabModel, tabNode, e);
-    sendMessageToGreatSuspenderExtension(tabModel.tabId, {action: tabModel.hibernated ? 'unsuspendOne' : 'suspendOne'});
+    sendMessageToGreatSuspenderExtension(tabModel.tabId, {action: tabModel.snoozed ? 'unsuspendOne' : 'suspendOne'});
   }
 
   function hideContextMenu() {
@@ -358,7 +358,7 @@ function onReady() {
     updateViewTimer = setTimeout(() => {
       log('Updating view...');
       model.getTabModels().forEach(tabModel => {
-        getElementByGuid(tabModel.tabGuid).toggleClass('sidebar-tab-hibernated', tabModel.hibernated);
+        getElementByGuid(tabModel.tabGuid).toggleClass('sidebar-tab-snoozed', tabModel.snoozed);
       });
       const tabGuidsByUrl = new Map<string, string[]>();
       model.getTabModels().forEach(tabModel => {
@@ -373,6 +373,7 @@ function onReady() {
       });
       model.getWindowModels().forEach(windowModel => {
         const windowElement = getElementByGuid(windowModel.windowGuid);
+        const tabsCount = windowModel.tabsCount === undefined ? '?' : windowModel.tabsCount;
         windowElement.children('.sidebar-window-anchor').text(windowModel.title + ' (' + windowModel.tabsCount + ')');
       });
       document.title = 'Chrome - Tabs Lord (' + model.getTabsCount() + ')';
@@ -405,7 +406,7 @@ function onReady() {
   }
 
   function onTabAddedToModel(tabModel: ITabModel) {
-    const windowElement = getElementByGuid(tabModel.windowGuid);
+    const windowElement = getElementByGuid(tabModel.windowModel.windowGuid);
     const tabsListElement = windowElement.children('.sidebar-tabs-list')[0];
     const tabElement = templateTabNode.clone()
       .attr('id', tabModel.tabGuid);
@@ -513,7 +514,7 @@ function onReady() {
     if (windowModel) {
       const tabTitle = tab.title || 'Loading...';
       const tabFavIconUrl = correctFavIconUrl(tab.favIconUrl);
-      model.addTabModel(tab.windowId, windowModel.windowGuid, tab.id, undefined, tabTitle, tabFavIconUrl, tab.url, tab.index, false, tab.audible);
+      model.addTabModel(windowModel.windowGuid, tab.id, undefined, tabTitle, tabFavIconUrl, tab.url, tab.index, false, tab.audible);
     }
     else {
       warn('Window model not found', tab);
@@ -523,8 +524,8 @@ function onReady() {
   function onChromeTabRemoved(tabId: number, removeInfo: any) {
     log('Tab removed', tabId, removeInfo);
     const tabModel = model.getTabModelById(tabId);
-    const windowModel = model.getWindowModelById(tabModel.windowId);
-    if (!windowModel.hibernated) {
+    const windowModel = tabModel.windowModel;
+    if (windowModel && !windowModel.hibernated) {
       removeTabNodeByGuid(tabModel.tabGuid);
     }
   }

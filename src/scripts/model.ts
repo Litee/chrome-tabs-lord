@@ -34,7 +34,15 @@ export class Model {
           const windowFirstTabModel = this.getTabsByWindowGuid(windowModel.windowGuid)[0];
           return Object.assign({firstTabUrl: windowFirstTabModel ? windowFirstTabModel.url : undefined}, windowModel);
         }),
-        tabs: Array.from(this._tabs.values())
+        tabs: Array.from(this._tabs.values()).map(tabModel => {
+          const persistentTabModel = {
+            tabGuid: tabModel.tabGuid,
+            windowGuid: tabModel.windowModel.windowGuid,
+            icon: tabModel.icon,
+            index: tabModel.index
+          };
+          return persistentTabModel;
+        })
       };
       const newStateAsString = JSON.stringify(state);
       if (newStateAsString !== this._savedStateAsString) {
@@ -54,12 +62,12 @@ export class Model {
       });
     }
     if (this._stateLoadedOnStart && this._stateLoadedOnStart.tabs) {
-      this._stateLoadedOnStart.tabs.forEach((tabModel: ITabModel) => {
+      this._stateLoadedOnStart.tabs.forEach(tabModel => {
         const windowModel = this.getWindowModelByGuid(tabModel.windowGuid);
         if (windowModel) {
           if (windowModel.hibernated) {
             log('Restoring tab from state', tabModel);
-            this.addTabModel(tabModel.windowId, tabModel.windowGuid, Model.HIBERNATED_TAB_ID, tabModel.tabGuid, tabModel.title, tabModel.icon, tabModel.url, tabModel.index, false, false);
+            this.addTabModel(windowModel.windowGuid, Model.HIBERNATED_TAB_ID, tabModel.tabGuid, tabModel.title, tabModel.icon, tabModel.url, tabModel.index, false, false);
           }
         }
       });
@@ -99,7 +107,7 @@ export class Model {
     return url;
   }
 
-  private isHibernatedUrl(url: string) {
+  private isSnoozedUrl(url: string) {
     return url.indexOf('chrome-extension://klbibkeccnjlkjkiokjodocebajanakg/suspended.html#uri=') === 0;
   }
 
@@ -122,7 +130,7 @@ export class Model {
 
   public suggestWindowTitle(firstTabUrl: string) {
     if (firstTabUrl && this._stateLoadedOnStart && this._stateLoadedOnStart.windows) {
-      const bestMatch = this._stateLoadedOnStart.windows.find((windowModel:IWindowModel) => windowModel.firstTabUrl === firstTabUrl && !windowModel.hibernated);
+      const bestMatch = this._stateLoadedOnStart.windows.find(windowModel  => windowModel.firstTabUrl === firstTabUrl && !windowModel.hibernated);
       if (bestMatch) {
         log('Window from previous session found', bestMatch);
         return bestMatch.title;
@@ -133,13 +141,17 @@ export class Model {
 
   /**** Windows ****/
 
-  public getWindowModelById(windowId: number) {
-    const foundWindowModel = Array.from(this._windows.values()).find(windowModel => windowModel.windowId === windowId);
+  public getWindowModelByGuid(windowGuid: string) {
+    const foundWindowModel = Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
     return this.makeImmutable(foundWindowModel);
   }
 
-  public getWindowModelByGuid(windowGuid: string) {
-    const foundWindowModel = Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
+  private getMutableWindowModelByGuid(windowGuid: string) {
+    return Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
+  }
+
+  public getWindowModelById(windowId: number) {
+    const foundWindowModel = Array.from(this._windows.values()).find(windowModel => windowModel.windowId === windowId);
     return this.makeImmutable(foundWindowModel);
   }
 
@@ -173,7 +185,7 @@ export class Model {
     const windowModel = this.getWindowModelByGuid(windowGuid);
     this._windows.delete(windowGuid);
     this._tabs.forEach(tabModel => {
-      if (tabModel.windowGuid === windowGuid) {
+    if (tabModel.windowModel.windowGuid === windowGuid) {
         this.deleteTabModel(tabModel.tabGuid);
       }
     });
@@ -198,18 +210,22 @@ export class Model {
   }
 
   public getTabsByWindowGuid(windowGuid: string) {
-    return Array.from(this._tabs.values()).filter(tabModel => tabModel.windowGuid === windowGuid).map(tabModel => this.makeImmutable(tabModel));
+    return Array.from(this._tabs.values()).filter(tabModel => tabModel.windowModel.windowGuid === windowGuid).map(tabModel => this.makeImmutable(tabModel));
   }
 
   public getTabsCount() {
     return this._tabs.size;
   }
 
-  public addTabModel(windowId: number, windowGuid: string, tabId: number, tabGuid: string, tabTitle: string, tabIcon: string, tabUrl: string, tabIndex: number, isTabSelected: boolean, isTabAudible: boolean) {
+  public addTabModel(windowGuid: string, tabId: number, tabGuid: string, tabTitle: string, tabIcon: string, tabUrl: string, tabIndex: number, isTabSelected: boolean, isTabAudible: boolean) {
     debug('Adding tab model', arguments);
+    const windowModel = this.getMutableWindowModelByGuid(windowGuid);
+    if (!windowModel) {
+      warn('Could not find window model', windowGuid, this._windows);
+      return;
+    }
     const validTabGuid = tabGuid || this.generateGuid();
-    const tabModel = new TabModel(validTabGuid, windowGuid);
-    tabModel.windowId = windowId;
+    const tabModel = new TabModel(validTabGuid, windowModel);
     tabModel.tabId = tabId;
     tabModel.title = tabTitle;
     tabModel.icon = tabIcon;
@@ -217,36 +233,38 @@ export class Model {
     tabModel.index = tabIndex;
     tabModel.normalizedUrl = this.normalizeUrlForDuplicatesFinding(tabUrl);
     tabModel.selected = isTabSelected;
-    tabModel.hibernated = tabUrl && this.isHibernatedUrl(tabUrl);
+    tabModel.snoozed = tabUrl && this.isSnoozedUrl(tabUrl);
     tabModel.audible = isTabAudible;
     this._tabs.set(validTabGuid, tabModel);
-    const windowModel = Array.from(this._windows.values()).find(_windowModel => _windowModel.windowGuid === windowGuid);
     windowModel.tabsCount = (windowModel.tabsCount || 0) + 1;
     this.persist();
     $(document).trigger('tabsLord:tabAddedToModel', [tabModel]);
   }
 
-  public updateTabModel(tabGuid: string, updateInfo: any) {
+  public updateTabModel(tabGuid: string, updateInfo: TabModelUpdateInfo) {
     const tabModel = Array.from(this._tabs.values()).find(_tabModel => _tabModel.tabGuid === tabGuid);
     if (!tabModel) { // skipping tabs which are not tracked - e.g. Tabs Lord popup itself
       return;
     }
-    if (updateInfo.url) {
+    if (updateInfo.url !== undefined) {
       tabModel.url = updateInfo.url;
       tabModel.normalizedUrl = this.normalizeUrlForDuplicatesFinding(tabModel.url);
-      tabModel.hibernated = tabModel.url && this.isHibernatedUrl(tabModel.url);
+      tabModel.snoozed = tabModel.url && this.isSnoozedUrl(tabModel.url);
     }
-    if (updateInfo.title) {
+    if (updateInfo.title !== undefined) {
       tabModel.title = updateInfo.title;
     }
-    if (updateInfo.favIconUrl) {
+    if (updateInfo.favIconUrl !== undefined) {
       tabModel.favIconUrl = updateInfo.favIconUrl;
     }
     if (updateInfo.selected !== undefined) {
       tabModel.selected = updateInfo.selected;
     }
-    if (updateInfo.windowId) {
-      tabModel.windowId = updateInfo.windowId;
+    if (updateInfo.windowGuid !== undefined) {
+      const newWindowModel = this.getMutableWindowModelByGuid(updateInfo.windowGuid);
+      if (newWindowModel) {
+        tabModel.windowModel = newWindowModel;
+      }
     }
     this.persist();
   }
@@ -282,6 +300,8 @@ export interface TabModelUpdateInfo {
   url?: string;
   title?: string;
   favIconUrl?: string;
+  selected?: boolean;
+  windowGuid?: string;
 }
 
 export interface IWindowModel {
@@ -291,6 +311,13 @@ export interface IWindowModel {
   title: string;
   firstTabUrl: string;
   tabsCount: number;
+}
+
+interface IPersistentWindowModel {
+  windowGuid: string;
+  hibernated: boolean;
+  title: string;
+  firstTabUrl: string;
 }
 
 class WindowModel implements IWindowModel {
@@ -307,13 +334,46 @@ class WindowModel implements IWindowModel {
     this.title = windowTitle;
     this.hibernated = hibernated;
   }
+
+/*  public windowGuid(): string {
+    return this._windowGuid;
+  }
+
+  public windowId(): number {
+    return this._windowId;
+  }
+
+  hibernated(): boolean {
+    return this._hibernated;
+  }
+
+  title(): string {
+    return this._title;
+  }
+
+  firstTabUrl(): string {
+    return this._firstTabUrl;
+  }
+
+  tabsCount(): number {
+    return this._tabsCount;
+  }*/
+}
+
+export interface IPersistentTabModel {
+  tabGuid: string;
+  windowGuid: string;
+  title: string;
+  icon: string;
+  index: number;
+  url: string;
+  favIconUrl: string;
 }
 
 export interface ITabModel {
   tabGuid: string;
   tabId: number;
-  windowGuid: string;
-  windowId: number;
+  windowModel: IWindowModel;
   selected: boolean;
   title: string;
   icon: string;
@@ -321,20 +381,15 @@ export interface ITabModel {
   url: string;
   normalizedUrl: string;
   favIconUrl: string;
-  hibernated: boolean;
+  snoozed: boolean;
+  isHibernatedDeep(): boolean;
   audible: boolean;
-}
-
-interface IPersistentState {
-  windows: IWindowModel[];
-  tabs: ITabModel[];
 }
 
 class TabModel implements ITabModel {
   tabGuid: string;
   tabId: number;
-  windowGuid: string;
-  windowId: number;
+  windowModel: IWindowModel;
   selected: boolean = false;
   title: string;
   icon: string;
@@ -342,11 +397,20 @@ class TabModel implements ITabModel {
   url: string;
   normalizedUrl: string;
   favIconUrl: string;
-  hibernated: boolean = false;
+  snoozed: boolean = false;
   audible: boolean = false;
 
-  constructor(tabGuid: string, windowGuid: string) {
+  constructor(tabGuid: string, windowModel: IWindowModel) {
     this.tabGuid = tabGuid;
-    this.windowGuid = windowGuid;
+    this.windowModel = windowModel;
   }
+
+  public isHibernatedDeep(): boolean {
+    return this.windowModel.hibernated;
+  }
+}
+
+interface IPersistentState {
+  windows: IPersistentWindowModel[];
+  tabs: IPersistentTabModel[];
 }

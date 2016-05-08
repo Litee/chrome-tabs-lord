@@ -184,12 +184,12 @@
 	height: 24px;
 }
 
-.sidebar-tab-hibernated .sidebar-tab-anchor {
+.sidebar-tab-snoozed .sidebar-tab-anchor {
 	color: #C0C0C0;
 	font-style: italic;
 }
 
-.sidebar-tab-hibernated .sidebar-tab-favicon {
+.sidebar-tab-snoozed .sidebar-tab-favicon {
 	opacity: 0.4;
 }
 
