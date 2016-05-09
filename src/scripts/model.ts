@@ -338,6 +338,10 @@ export class Model {
     return this.makeImmutable(foundTabModel);
   }
 
+  private getMutableTabModelByGuid(tabGuid: string): ITabModel {
+    return Array.from(this._tabs.values()).find(tabModel => tabModel.tabGuid === tabGuid);
+  }
+
   public getTabModels(): ITabModel[] {
     return Array.from(this._tabs.values()).map(tabModel => this.makeImmutable(tabModel));
   }
@@ -393,13 +397,19 @@ export class Model {
     if (updateInfo.selected !== undefined) {
       tabModel.selected = updateInfo.selected;
     }
-    if (updateInfo.windowGuid !== undefined) {
-      const newWindowModel = this.getMutableWindowModelByGuid(updateInfo.windowGuid);
-      if (newWindowModel) {
-        tabModel.windowModel = newWindowModel;
-      }
-    }
     this.persist();
+  }
+
+  public moveTabToAnotherWindow(tabGuid: string, targetWindowGuid: string, pos: number) {
+    const tabModel = this.getMutableTabModelByGuid(tabGuid);
+    const targetWindowModel = this.getMutableWindowModelByGuid(targetWindowGuid);
+    (<IMutableWindowModel>tabModel.windowModel).decrementTabsCount();
+    tabModel.windowModel = targetWindowModel;
+    tabModel.index = pos;
+    targetWindowModel.incrementTabsCount();
+    this.persist();
+    $(document).trigger('tabsLord:tabRemovedFromModel', [tabModel]);
+    $(document).trigger('tabsLord:tabAddedToModel', [tabModel]);
   }
 
   public deleteTabModel(tabGuid: string): void {
@@ -414,6 +424,7 @@ export class Model {
       this.deleteTabBookmark(tabModel);
     }
     this.persist();
+    $(document).trigger('tabsLord:tabRemovedFromModel', [tabModel]);
   }
 
   public unselectAllTabs(): void {
@@ -428,7 +439,6 @@ export interface TabModelUpdateInfo {
   title?: string;
   favIconUrl?: string;
   selected?: boolean;
-  windowGuid?: string;
 }
 
 export interface IWindowModel {

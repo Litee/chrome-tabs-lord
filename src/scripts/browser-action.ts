@@ -59,8 +59,9 @@ chrome.browserAction.onClicked.addListener(() => {
 
   let updatingWindowPosition = false;
   function updateWindowsPosition(sidebarWindow: chrome.windows.Window, currentWindow: chrome.windows.Window) {
-    if (updatingWindowPosition)
+    if (updatingWindowPosition) {
       return;
+    }
     updatingWindowPosition = true;
     console.log('Updating windows position', sidebarWindow, currentWindow);
     chrome.system.display.getInfo(displaysInfo => {

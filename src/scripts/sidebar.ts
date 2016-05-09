@@ -104,7 +104,7 @@ function onReady() {
     $(document)
       .on('mousedown.sidebar', e => {
         const contextMenu = $('.sidebar-context-menu');
-        if(contextMenu.length > 0 && !$.contains(contextMenu[0], e.target)) {
+        if (contextMenu.length > 0 && !$.contains(contextMenu[0], e.target)) {
           hideContextMenu();
         }
       })
@@ -124,6 +124,10 @@ function onReady() {
       .on('tabsLord:tabAddedToModel', (e, tabModel) => {
         log('Global event: Tab model added', e, tabModel);
         onTabAddedToModel(tabModel);
+      })
+      .on('tabsLord:tabRemovedFromModel', (e, tabModel) => {
+        log('Global event: Tab model added', e, tabModel);
+        onTabRemovedFromModel(tabModel);
       })
       .on('click.sidebar', '#sidebar-reset-search-button', $.proxy(e => {
         $('#sidebar-search-box').val('');
@@ -314,44 +318,82 @@ function onReady() {
     if (selectedTabModels.length === 0) {
       selectedTabModels.push(contextTabModel);
     }
-    const selectedTabIds = selectedTabModels.map(tabModel => tabModel.tabId);
     model.getWindowModels().forEach(windowModel => {
       const menuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
       const firstTabModel = model.getTabsByWindowGuid(windowModel.windowGuid)[0];
-      const menuText = windowModel.title === 'Window' ? 'With tab "' + firstTabModel.title + '"' : windowModel.title;
+      const menuText = windowModel.title === 'Window' ? '"' + firstTabModel.title + '" (first tab)' : '"' + windowModel.title + '" (named)';
       $('<a>').addClass('sidebar-context-menu-item-anchor')
       .attr('href', '#')
       .text(menuText)
       .appendTo(menuItemElement)
       .click('click', () => {
         log('"Move to another window" menu item clicked', selectedTabModels, windowModel);
-        moveSelectedTabsToWindow(selectedTabIds, windowModel.windowId);
+        moveSelectedTabsToWindow(selectedTabModels, windowModel.windowGuid);
         hideContextMenu();
       });
     });
     const menuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
     $('<a>').addClass('sidebar-context-menu-item-anchor')
     .attr('href', '#')
-    .text('New window')
+    .text('<New window>')
     .appendTo(menuItemElement)
     .click('click', () => {
       log('"Move to new window" menu item clicked', selectedTabModels);
       chrome.windows.create({
         type: 'normal',
-        tabId: selectedTabIds[0]
+        tabId: selectedTabModels[0].tabId
       }, newWindow => {
-        moveSelectedTabsToWindow(selectedTabIds.slice(1), newWindow.id);
+        const windowModel = model.getWindowModelById(newWindow.id);
+        moveSelectedTabsToWindow(selectedTabModels.slice(1), windowModel.windowGuid);
         hideContextMenu();
       });
     });
     return result;
   }
 
-  function moveSelectedTabsToWindow(selectedTabIds: number[], targetWindowId: number) {
-    log('Moving tabs to window...', targetWindowId);
-    chrome.tabs.move(selectedTabIds, {windowId: targetWindowId, index: -1}, () => {
-        // TODO Restore selection
+  function moveSelectedTabsToWindow(selectedTabModels: ITabModel[], targetWindowGuid: string) {
+    const targetWindowModel = model.getWindowModelByGuid(targetWindowGuid);
+    if (!targetWindowModel) {
+      warn('Could not find target window model when moving selected tabs', targetWindowGuid);
+      return;
+    }
+    log('Moving tabs to window...', selectedTabModels, targetWindowModel);
+    // Four cases here: matrix of normal/hibernated tabs to normal/hibernated windows. Additional case - tabs that move into the same window, should be ignored
+
+    const tabModelsToMove = selectedTabModels.filter(tabModel => tabModel.windowModel.windowGuid !== targetWindowGuid); // Ignoring tabs that move to the same window the currently belong to
+    if (tabModelsToMove.length === 0) {
+      return; // No real tabs to move, so exiting
+    }
+    const hibernatedTabsToMove = tabModelsToMove.filter(tabModel => tabModel.windowModel.hibernated);
+    hibernatedTabsToMove.forEach(tabModel => { // Moving hibernated tabs first
+      if (targetWindowModel.hibernated) { // hibernated tab to hibernated window
+        log('Moving hibernated tab to hibernated window', tabModel, targetWindowModel);
+        model.moveTabToAnotherWindow(tabModel.tabGuid, targetWindowGuid, -1);
+      }
+      else { // hibernated tab to normal window - creating new tab, dropping information about the hibernated one
+        log('Moving hibernated tab to normal window', tabModel, targetWindowModel);
+        chrome.tabs.create({ windowId: targetWindowModel.windowId, url: tabModel.url }, tab => {
+          model.deleteTabModel(tabModel.tabGuid);
+        });
+      }
     });
+    const normalTabsToMove = tabModelsToMove.filter(tabModel => !tabModel.windowModel.hibernated);
+    if (normalTabsToMove.length > 0) {
+      if (targetWindowModel.hibernated) { // normal tabs to hibernated window
+        normalTabsToMove.forEach(tabModel => {
+          log('Moving normal tab to hibernated window', tabModel, targetWindowModel);
+          model.moveTabToAnotherWindow(tabModel.tabGuid, targetWindowGuid, -1);
+          chrome.tabs.remove(tabModel.tabId);
+        });
+      }
+      else { // normal tabs to normal window
+        log('Moving normal tabs to normal window', normalTabsToMove, targetWindowModel);
+        const selectedTabIds = normalTabsToMove.map(tabModel => tabModel.tabId);
+        chrome.tabs.move(selectedTabIds, { windowId: targetWindowModel.windowId, index: -1 }, () => {
+          // TODO Restore selection
+        });
+      }
+    }
   }
 
   function updateView() {
@@ -415,26 +457,35 @@ function onReady() {
     tabElement.children('.sidebar-tab-anchor').text(tabModel.title).attr('title', tabModel.url);
     tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + tabModel.icon + ')');
     tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
-    tabsListElement.insertBefore(tabElement[0], tabsListElement.children[tabModel.index]);
+    if (tabModel.index < 0) {
+      tabsListElement.appendChild(tabElement[0]);
+    }
+    else {
+      tabsListElement.insertBefore(tabElement[0], tabsListElement.children[tabModel.index]);
+    }
       // Model update
+    updateView();
+  }
+
+  function onTabRemovedFromModel(tabModel: ITabModel) {
+    const tabElement = getElementByGuid(tabModel.tabGuid);
+    if (tabElement) {
+      tabElement.remove();
+    }
     updateView();
   }
 
   function removeTabNodeByGuid(tabGuid: string) {
     model.deleteTabModel(tabGuid);
-    const tabElement = getElementByGuid(tabGuid);
-    tabElement.remove();
-    updateView();
   }
 
   function moveTabNodeByGuid(tabGuid: string, targetWindowGuid: string, pos: number) {
-    const tabElement = getElementByGuid(tabGuid);
-    const targetWindowElement = getElementByGuid(targetWindowGuid);
-    log('Moving tab', tabGuid, targetWindowGuid, pos, tabElement, targetWindowElement);
-    const tabsListElement = targetWindowElement.children('.sidebar-tabs-list')[0];
-    tabsListElement.insertBefore(tabElement[0].parentNode.removeChild(tabElement[0]), tabsListElement.children[pos]);
-    model.updateTabModel(tabGuid, {windowGuid: targetWindowGuid});
-    updateView();
+    log('Moving tab', tabGuid, targetWindowGuid, pos);
+    // const tabElement = getElementByGuid(tabGuid);
+    // const targetWindowElement = getElementByGuid(targetWindowGuid);
+    // const tabsListElement = targetWindowElement.children('.sidebar-tabs-list')[0];
+    // tabsListElement.insertBefore(tabElement[0].parentNode.removeChild(tabElement[0]), tabsListElement.children[pos]);
+    model.moveTabToAnotherWindow(tabGuid, targetWindowGuid, pos);
   }
 
   function search(searchPattern: string) {
@@ -450,7 +501,7 @@ function onReady() {
         tabElement.removeClass('sidebar-tab-search-match');
         windowsWithVisibleTabs.set(tabModel.windowModel.windowGuid, (windowsWithVisibleTabs.get(tabModel.windowModel.windowGuid) || 0) + 1);
       }
-      else if (tabModel.title.toLowerCase().indexOf(searchPattern) >= 0 || tabModel.url.toLowerCase().indexOf(searchPattern) >= 0) { // showing as match
+      else if ((tabModel.title && tabModel.title.toLowerCase().indexOf(searchPattern) >= 0) || (tabModel.url && tabModel.url.toLowerCase().indexOf(searchPattern) >= 0)) { // showing as match
         tabElement.removeClass('sidebar-tab-hidden');
         tabElement.addClass('sidebar-tab-search-match');
         windowsWithVisibleTabs.set(tabModel.windowModel.windowGuid, (windowsWithVisibleTabs.get(tabModel.windowModel.windowGuid) || 0) + 1);
