@@ -10,6 +10,19 @@
     "no-trailing-whitespace": true,
     "one-variable-per-declaration": true,
     "semicolon": [true, "always"],
-    "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore"]
+    "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore"],
+    "curly": true,
+    "eofline": true,
+    "no-construct": true,
+    "no-duplicate-key": true,
+    "no-require-imports": true,
+    "no-unreachable": true,
+    "no-use-before-declare": true,
+    "semicolon": [true, "always"],
+    "whitespace": [true,
+      "check-branch",
+      "check-operator",
+      "check-separator"
+    ]
   }
 }
