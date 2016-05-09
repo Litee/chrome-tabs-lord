@@ -21,7 +21,9 @@
   },
   "permissions": [
     "tabs",
-    "system.display"
+    "system.display",
+    "bookmarks",
+    "chrome://favicon/"
   ],
   "commands": {
     "_execute_browser_action": {

@@ -145,7 +145,7 @@ function onReady() {
         debug('Window restored', window, windowModel);
         const newWindowModel = model.getWindowModelById(window.id);
         if (newWindowModel) {
-          model.updateWindowModel(newWindowModel.windowGuid, {title: windowModel.title});
+          model.renameWindow(newWindowModel.windowGuid, windowModel.title);
         }
         tabModels.slice(1).forEach(tabModel => {
           debug('Restoring tab model', tabModel);
@@ -175,7 +175,7 @@ function onReady() {
           return;
         }
       }
-      model.updateWindowModel(windowGuid, {title: windowTitle, hibernated: true});
+      model.hibernateWindow(windowGuid, windowTitle);
       chrome.windows.remove(windowModel.windowId);
       const windowElement = getElementByGuid(windowModel.windowGuid);
       windowElement.addClass('sidebar-window-hibernated');
@@ -209,12 +209,12 @@ function onReady() {
     inputElement.select();
   }
 
-  function stopWindowNodeEditByGuid(windowGuid: string, newText: string) {
-    if (newText.length === 0) {
-      newText = 'Window';
+  function stopWindowNodeEditByGuid(windowGuid: string, newTitle: string) {
+    if (newTitle.length === 0) {
+      newTitle = 'Window';
     }
     const windowNodeElement = getElementByGuid(windowGuid);
-    model.updateWindowModel(windowGuid, {title: newText});
+    model.renameWindow(windowGuid, newTitle);
     windowNodeElement.children('.sidebar-window-row').show();
     windowNodeElement.children('.sidebar-window-anchor').show();
     windowNodeElement.children('input').remove();
