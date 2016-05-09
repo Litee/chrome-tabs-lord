@@ -4,8 +4,8 @@
     "jquery": "registry:dt/jquery#1.10.0+20160417213236"
   },
   "ambientDependencies": {
-    "chrome": "registry:dt/chrome#0.0.0+20160501161658",
-    "chrome-app": "registry:dt/chrome-app#0.0.0+20160317120654",
+    "chrome": "registry:dt/chrome#0.0.0+20160509083626",
+    "chrome-app": "registry:dt/chrome-app#0.0.0+20160509082349",
     "filesystem": "registry:dt/filesystem#0.0.0+20160316155526",
     "filewriter": "registry:dt/filewriter#0.0.0+20160316155526",
     "jquery": "registry:dt/jquery#1.10.0+20160417213236",
