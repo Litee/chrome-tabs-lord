@@ -22,5 +22,12 @@
   "permissions": [
     "tabs",
     "system.display"
-  ]
+  ],
+  "commands": {
+    "_execute_browser_action": {
+      "suggested_key": {
+        "windows": "Alt+Q"
+      }
+    }
+  }
 }
