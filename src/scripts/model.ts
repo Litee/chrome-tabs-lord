@@ -229,6 +229,9 @@ export class Model {
       if (pos === 0) {
         url = url.substring(8);
       }
+      if (url.endsWith('/')) {
+        url = url.substring(0, url.length - 1);
+      }
     }
     return url;
   }
