@@ -332,11 +332,11 @@ function onReady() {
         hideContextMenu();
       });
     });
-    const menuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
+    const newWindowMenuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
     $('<a>').addClass('sidebar-context-menu-item-anchor')
     .attr('href', '#')
     .text('<New window>')
-    .appendTo(menuItemElement)
+    .appendTo(newWindowMenuItemElement)
     .click('click', () => {
       log('"Move to new window" menu item clicked', selectedTabModels);
       chrome.windows.create({
@@ -347,6 +347,26 @@ function onReady() {
         moveSelectedTabsToWindow(selectedTabModels.slice(1), windowModel.windowGuid);
         hideContextMenu();
       });
+    });
+    $('<li>').addClass('sidebar-context-menu-item-separator').appendTo(moveMenuUl);
+    const closeSelectedTabsMenuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
+    $('<a>').addClass('sidebar-context-menu-item-anchor')
+    .attr('href', '#')
+    .text('Close selected tabs')
+    .appendTo(closeSelectedTabsMenuItemElement)
+    .click('click', () => {
+      log('"Closed selected tabs" menu item clicked', selectedTabModels);
+      if (confirm('Are you sure you want to close ' + selectedTabModels.length + ' tabs?')) {
+        selectedTabModels.forEach(tabModel => {
+          if (tabModel.windowModel.hibernated) {
+            model.deleteTabModel(tabModel.tabGuid);
+          }
+          else {
+            chrome.tabs.remove(tabModel.tabId);
+          }
+        });
+      }
+      hideContextMenu();
     });
     return result;
   }

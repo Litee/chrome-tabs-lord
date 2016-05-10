@@ -202,6 +202,11 @@
   box-shadow: 2px 2px 2px #999999;
 }
 
+li.sidebar-context-menu-item-separator {
+  border-top: #CCC solid 1px;
+  min-height: 3px;
+}
+
 .sidebar-context-menu-item-anchor:hover {
 	font-weight: bold;
 }
