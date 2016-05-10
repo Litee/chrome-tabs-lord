@@ -10,7 +10,9 @@ chrome.browserAction.onClicked.addListener(() => {
   chrome.windows.getCurrent(undefined, currentWindow => {
     console.log('Last focused window found', currentWindow);
     getOrCreateSidebarWindow(sidebarWindow => {
-      updateWindowsPosition(sidebarWindow, currentWindow);
+      if (sidebarWindow.id !== currentWindow.id) {
+        updateWindowsPosition(sidebarWindow, currentWindow);
+      }
     });
   });
 
