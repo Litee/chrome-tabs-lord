@@ -352,7 +352,7 @@ function onReady() {
     const closeSelectedTabsMenuItemElement = $('<li>').addClass('sidebar-context-menu-item').addClass('sidebar-context-menu-item-dangerous').appendTo(moveMenuUl);
     $('<a>').addClass('sidebar-context-menu-item-anchor')
     .attr('href', '#')
-    .text('Close selected tabs')
+    .text('Close selected tabs (' + selectedTabModels.length + ')')
     .appendTo(closeSelectedTabsMenuItemElement)
     .click('click', () => {
       log('"Closed selected tabs" menu item clicked', selectedTabModels);
