@@ -349,7 +349,7 @@ function onReady() {
       });
     });
     $('<li>').addClass('sidebar-context-menu-item-separator').appendTo(moveMenuUl);
-    const closeSelectedTabsMenuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
+    const closeSelectedTabsMenuItemElement = $('<li>').addClass('sidebar-context-menu-item').addClass('sidebar-context-menu-item-dangerous').appendTo(moveMenuUl);
     $('<a>').addClass('sidebar-context-menu-item-anchor')
     .attr('href', '#')
     .text('Close selected tabs')
