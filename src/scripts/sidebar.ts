@@ -48,7 +48,7 @@ function onReady() {
     });
     setTimeout(() => { // Using timeout to avoid restoring hibernated windows before primary onces
       model.restoreHibernatedWindowsAndTabs();
-      sidebarContainer.text('');
+      $('#loading-placeholder').hide();
     }, 1);
     log('Existing windows parsed!');
   });
