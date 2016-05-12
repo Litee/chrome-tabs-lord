@@ -501,10 +501,6 @@ function onReady() {
 
   function moveTabNodeByGuid(tabGuid: string, targetWindowGuid: string, pos: number) {
     log('Moving tab', tabGuid, targetWindowGuid, pos);
-    // const tabElement = getElementByGuid(tabGuid);
-    // const targetWindowElement = getElementByGuid(targetWindowGuid);
-    // const tabsListElement = targetWindowElement.children('.sidebar-tabs-list')[0];
-    // tabsListElement.insertBefore(tabElement[0].parentNode.removeChild(tabElement[0]), tabsListElement.children[pos]);
     model.moveTabToAnotherWindow(tabGuid, targetWindowGuid, pos);
   }
 
@@ -513,7 +509,6 @@ function onReady() {
     const windowsWithVisibleTabs = new Map();
     // TODO Why do I need two classes here?
     $('#sidebar-reset-search-button').toggleClass('sidebar-reset-search-button-active', searchPattern.length > 0);
-    $('#sidebar-reset-search-button').toggleClass('sidebar-reset-search-button-inactive', searchPattern.length === 0);
     model.getTabModels().forEach(tabModel => {
       const tabElement = getElementByGuid(tabModel.tabGuid);
       if (searchPattern.length === 0) { // making visible due to search reset
