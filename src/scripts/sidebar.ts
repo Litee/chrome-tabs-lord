@@ -130,6 +130,10 @@ function onReady() {
         log('Global event: Tab model added', e, tabModel);
         onTabRemovedFromModel(tabModel);
       })
+      .on('tabsLord:tabModelUpdated', (e, tabModel) => {
+        log('Global event: Tab model updated', e, tabModel);
+        onTabModelUpdated(tabModel);
+      })
       .on('click.sidebar', '#sidebar-reset-search-button', $.proxy(e => {
         $('#sidebar-search-box').val('');
         search('');
@@ -496,6 +500,16 @@ function onReady() {
     updateView();
   }
 
+  function onTabModelUpdated(tabModel: ITabModel) {
+    if (tabModel) {
+      const tabElement = getElementByGuid(tabModel.tabGuid);
+      tabElement.children('.sidebar-tab-anchor').attr('title', tabModel.url);
+      tabElement.children('.sidebar-tab-anchor').text(tabModel.title);
+      tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + tabModel.favIconUrl + ')');
+      tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
+    }
+  }
+
   function removeTabNodeByGuid(tabGuid: string) {
     model.deleteTabModel(tabGuid);
   }
@@ -610,21 +624,17 @@ function onReady() {
       const updateInfo: TabModelUpdateInfo = {};
       if (changeInfo.url) {
         updateInfo.url = changeInfo.url;
-        tabElement.children('.sidebar-tab-anchor').attr('title', changeInfo.url);
       }
       const tabTitle = changeInfo.title;
       if (tabTitle && tabModel.title !== tabTitle) {
         updateInfo.title = tabTitle;
-        tabElement.children('.sidebar-tab-anchor').text(tabTitle);
       }
       const favIconUrl = changeInfo.favIconUrl;
       if (favIconUrl && tabModel.favIconUrl !== favIconUrl) {
         updateInfo.favIconUrl = correctFavIconUrl(favIconUrl);
-        tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + favIconUrl + ')');
       }
       if (changeInfo.audible !== undefined) {
         log('Switching audible icon', changeInfo.audible);
-        tabElement.children('.sidebar-tab-icon-audible').toggle(changeInfo.audible);
       }
       model.updateTabModel(tabModel.tabGuid, updateInfo);
     }

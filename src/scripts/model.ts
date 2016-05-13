@@ -367,7 +367,7 @@ export class Model {
     const validTabGuid = tabGuid || this.generateGuid();
     const tabModel = new TabModel(validTabGuid, windowModel);
     tabModel.tabId = tabId;
-    tabModel.title = tabTitle;
+    tabModel.title = tabTitle || tabUrl;
     tabModel.icon = tabIcon;
     tabModel.url = tabUrl;
     tabModel.index = tabIndex;
@@ -388,6 +388,7 @@ export class Model {
     }
     if (updateInfo.url !== undefined) {
       tabModel.url = updateInfo.url;
+      tabModel.title = updateInfo.title || updateInfo.url;
       tabModel.normalizedUrl = this.normalizeUrlForDuplicatesFinding(tabModel.url);
       tabModel.snoozed = tabModel.url && this.isSnoozedUrl(tabModel.url);
     }
@@ -401,6 +402,7 @@ export class Model {
       tabModel.selected = updateInfo.selected;
     }
     this.persist();
+    $(document).trigger('tabsLord:tabModelUpdated', [tabModel]);
   }
 
   public moveTabToAnotherWindow(tabGuid: string, targetWindowGuid: string, pos: number) {
