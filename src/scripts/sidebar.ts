@@ -326,7 +326,7 @@ function onReady() {
     model.getWindowModels().forEach(windowModel => {
       const menuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
       const firstTabModel = model.getTabsByWindowGuid(windowModel.windowGuid)[0];
-      const menuText = windowModel.title === 'Window' ? '"' + firstTabModel.title + '" (first tab)' : '"' + windowModel.title + '" (named)';
+      const menuText = windowModel.title === 'Window' ? '"' + firstTabModel.title + '" (by first tab)' : '"' + windowModel.title + '"';
       $('<a>').addClass('sidebar-context-menu-item-anchor')
       .attr('href', '#')
       .text(menuText)
@@ -357,7 +357,7 @@ function onReady() {
     const closeSelectedTabsMenuItemElement = $('<li>').addClass('sidebar-context-menu-item').addClass('sidebar-context-menu-item-dangerous').appendTo(moveMenuUl);
     $('<a>').addClass('sidebar-context-menu-item-anchor')
     .attr('href', '#')
-    .text('Close selected tabs (' + selectedTabModels.length + ')')
+    .text('Close selected tab' + (selectedTabModels.length > 1 ? 's (' + selectedTabModels.length + ')' : ''))
     .appendTo(closeSelectedTabsMenuItemElement)
     .click('click', () => {
       log('"Closed selected tabs" menu item clicked', selectedTabModels);
