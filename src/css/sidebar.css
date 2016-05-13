@@ -233,10 +233,10 @@ input.sidebar-window-title-edit {
     background-image: url("/images/reset-search.png");
 }
 
-span.sidebar-reset-search-button-active {
+span#sidebar-reset-search-button.sidebar-reset-search-button-active {
 	opacity: 1;
 }
 
-span:not(.sidebar-reset-search-button-active) {
+span#sidebar-reset-search-button:not(.sidebar-reset-search-button-active) {
 	opacity: 0.2;
 }
