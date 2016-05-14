@@ -87,14 +87,15 @@ chrome.browserAction.onClicked.addListener(() => {
       const workAreaTop = bestDisplayInfo.workArea.top;
       const workAreaHeight = bestDisplayInfo.workArea.height;
       const workAreaWidth = bestDisplayInfo.workArea.width;
+      const preferredSidebarWidth = parseInt(localStorage.getItem('tabs-lord-preferred-sidebar-width') || '400');
       chrome.windows.update(sidebarWindow.id, {
         focused: true,
         left: workAreaLeft,
         top: workAreaTop,
-        width: 400,
+        width: preferredSidebarWidth,
         height: workAreaHeight
       }, () => {
-        chrome.windows.update(currentWindow.id, {left: workAreaLeft + 400, width: workAreaWidth - 400, top: workAreaTop, height: workAreaHeight, focused: true}, () => {
+        chrome.windows.update(currentWindow.id, { left: workAreaLeft + preferredSidebarWidth, width: workAreaWidth - preferredSidebarWidth, top: workAreaTop, height: workAreaHeight, focused: true }, () => {
           setTimeout(() => {
             updatingWindowPosition = false;
           }, 500);

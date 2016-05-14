@@ -13,6 +13,10 @@ function onReady() {
   log('Sidebar view loaded! Reading information about existing windows...');
   let updateViewTimer: number = undefined;
 
+  $(window).resize(function() {
+    localStorage.setItem('tabs-lord-preferred-sidebar-width', '' + window.outerWidth);
+  });
+
   const sidebarContainer = $('#sidebar-nodes-container').addClass('tabs-lorg-nav-root');
 
   const templateWindowNode = $('<li>').addClass('sidebar-window-node').addClass('sidebar-window-node-expanded');

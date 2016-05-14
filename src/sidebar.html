@@ -9,9 +9,13 @@
     <title>Chrome - Tabs Lord</title>
 </head>
 <body>
-<input type="search" placeholder="Search by title or URL..." id="sidebar-search-box" />
-<span id="sidebar-reset-search-button"></span>
-<div>
+<table id="sidebar-top-panel">
+	<tr>
+		<td style="width 100%"><input id="sidebar-search-box" type="search" placeholder="Search by title or URL..." /></td>
+		<td><span id="sidebar-reset-search-button"></span></td>
+	</tr>
+</table>
+<div style="overflow: auto">
 	<center id="loading-placeholder">LOADING...</center>
 	<div id="sidebar-nodes-container"></div>
 </div>
