@@ -125,13 +125,22 @@
     padding: 0 4px 0 1px;
     margin: 0;
     vertical-align: top;
-    max-width: 100vw;
     text-overflow: ellipsis;
     overflow: hidden;
+}
+
+.sidebar-tab-anchor, .sidebar-window-anchor {
+    max-width: 100vw;
     position: absolute;
     right: 25px;
     left: 30px;
 }
+
+.sidebar-context-menu-item-anchor {
+    overflow: hidden;
+    position: relative;
+}
+
 
 .sidebar-window-anchor {
     font-weight: bold;
