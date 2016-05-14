@@ -297,20 +297,24 @@ export class Model {
     const validWindowGuid = (windowGuid || this.generateGuid());
     const windowModel = new WindowModel(validWindowGuid, windowId, windowTitle, isHibernated || false);
     this._windows.set(validWindowGuid, windowModel);
+    if (this._currentSearchPattern.length > 0) {
+      this.updateModelsFromCurrentSearchPattern();
+    }
     this.persist();
     $(document).trigger('tabsLord:windowAddedToModel', [windowModel]);
     return validWindowGuid;
   }
 
   public renameWindow(windowGuid: string, newTitle: string): void {
-    const foundWindowModel = Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
-    if (foundWindowModel.hibernated) {
-      this.getOrCreateWindowBookmark(foundWindowModel, windowBookmark => {
+    const windowModelToRename = Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
+    if (windowModelToRename.hibernated) {
+    this.getOrCreateWindowBookmark(windowModelToRename, windowBookmark => {
         chrome.bookmarks.update(windowBookmark.id, {title: newTitle});
       });
     }
-    foundWindowModel.title = newTitle;
+    windowModelToRename.title = newTitle;
     this.persist();
+    $(document).trigger('tabsLord:windowModelsUpdated', [{ models: [windowModelToRename] }]);
   }
 
   public hibernateWindow(windowGuid: string, newTitle: string) {
@@ -380,6 +384,7 @@ export class Model {
     tabModel.selected = isTabSelected;
     tabModel.snoozed = tabUrl && this.isSnoozedUrl(tabUrl);
     tabModel.audible = isTabAudible;
+    tabModel.matchesFilter = this.tabMatchesCurrentFilter(tabModel);
     this._tabs.set(validTabGuid, tabModel);
     windowModel.incrementTabsCount();
     this.persist();
@@ -406,8 +411,13 @@ export class Model {
     if (updateInfo.selected !== undefined) {
       tabModel.selected = updateInfo.selected;
     }
+    const newMatchesFilterValue = this.tabMatchesCurrentFilter(tabModel);
+    if (newMatchesFilterValue !== tabModel.matchesFilter) {
+    tabModel.matchesFilter = newMatchesFilterValue;
+      this.updateModelsFromCurrentSearchPattern();
+    }
     this.persist();
-    $(document).trigger('tabsLord:tabModelUpdated', [tabModel]);
+    $(document).trigger('tabsLord:tabModelsUpdated', [{ models: [tabModel] }]);
   }
 
   public moveTabToAnotherWindow(tabGuid: string, targetWindowGuid: string, pos: number) {
@@ -437,11 +447,18 @@ export class Model {
     $(document).trigger('tabsLord:tabRemovedFromModel', [tabModel]);
   }
 
+/*  public markTabModelAsNonDirty(tabGuid: string) {
+    const tabModel = this.getTabModelByGuid(tabGuid);
+    if (tabModel) {
+      tabModel.dirty = false;
+    }
+  }*/
+
   public unselectAllTabs(): void {
     this._tabs.forEach(tabModel => {
       tabModel.selected = false;
     });
-    $(document).trigger('tabsLord:allTabsUnselected');
+    $(document).trigger('tabsLord:tabModelsUpdated', [{ models: this.getTabModels() }]);
   }
 
   public selectTabsRange(windowGuid: string, start: number, end: number) {
@@ -450,9 +467,43 @@ export class Model {
       const tabModelToSelect = Array.from(this._tabs.values()).find(tabModel => tabModel.index === i && tabModel.windowModel.windowGuid === windowGuid);
       if (tabModelToSelect) {
         tabModelToSelect.selected = true;
-        $(document).trigger('tabsLord:tabModelUpdated', [tabModelToSelect]);
+        $(document).trigger('tabsLord:tabModelsUpdated', [{ models: [this.makeImmutable(tabModelToSelect)] }]);
       }
     }
+  }
+
+  private _currentSearchPattern = '';
+  public changeSearchPattern(searchPattern: string) {
+    this._currentSearchPattern = searchPattern;
+    this.updateModelsFromCurrentSearchPattern();
+  }
+
+  private updateModelsFromCurrentSearchPattern() {
+    const dirtyTabModels: ITabModel[] = [];
+    Array.from(this._windows.values()).forEach(windowModel => {
+      windowModel.tabsToHide = 0;
+    });
+    Array.from(this._tabs.values()).forEach(tabModel => {
+      if (this.tabMatchesCurrentFilter(tabModel)) { // showing as match
+        if (!tabModel.matchesFilter) {
+          tabModel.matchesFilter = true;
+          dirtyTabModels.push(tabModel);
+        }
+      }
+      else { // hiding as mismatch
+        if (tabModel.matchesFilter) {
+          tabModel.matchesFilter = false;
+          dirtyTabModels.push(tabModel);
+        }
+        tabModel.windowModel.tabsToHide++;
+      }
+    });
+    $(document).trigger('tabsLord:tabModelsUpdated', [{ models: dirtyTabModels.map(tabModel => this.makeImmutable(tabModel)) }]);
+    $(document).trigger('tabsLord:windowModelsUpdated', [{ models: this.getWindowModels() }]); // TODO: Slightly suboptimal - should be fixed once dirty flag will migrate into model
+  }
+
+  private tabMatchesCurrentFilter(tabModel: ITabModel): boolean {
+    return this._currentSearchPattern.length === 0 || (tabModel.title && tabModel.title.toLowerCase().indexOf(this._currentSearchPattern) >= 0) || (tabModel.url && tabModel.url.toLowerCase().indexOf(this._currentSearchPattern) >= 0);
   }
 }
 
@@ -470,6 +521,7 @@ export interface IWindowModel {
   title: string;
   firstTabUrl: string;
   tabsCount: number;
+  tabsToHide: number;
 }
 
 interface IMutableWindowModel extends IWindowModel {
@@ -491,6 +543,7 @@ class WindowModel implements IMutableWindowModel {
   title: string;
   firstTabUrl: string;
   tabsCount: number = 0;
+  tabsToHide: number = 0;
 
   constructor(windowGuid: string, windowId: number, windowTitle: string, hibernated: boolean) {
     this.windowGuid = windowGuid;
@@ -532,6 +585,7 @@ export interface ITabModel {
   snoozed: boolean;
   isHibernatedDeep(): boolean;
   audible: boolean;
+  matchesFilter: boolean;
 }
 
 class TabModel implements ITabModel {
@@ -547,6 +601,7 @@ class TabModel implements ITabModel {
   favIconUrl: string;
   snoozed: boolean = false;
   audible: boolean = false;
+  matchesFilter: boolean = true;
 
   constructor(tabGuid: string, windowModel: IWindowModel) {
     this.tabGuid = tabGuid;

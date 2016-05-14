@@ -126,6 +126,10 @@ function onReady() {
         log('Global event: Window model removed', e, windowModel);
         onChromeWindowRemovedFromModel(windowModel.windowGuid);
       })
+      .on('tabsLord:windowModelsUpdated', (e, data) => {
+        log('Global event: Window models updated', e, data);
+        onWindowModelsUpdated(data.models);
+      })
       .on('tabsLord:tabAddedToModel', (e, tabModel) => {
         log('Global event: Tab model added', e, tabModel);
         onTabAddedToModel(tabModel);
@@ -134,13 +138,9 @@ function onReady() {
         log('Global event: Tab model added', e, tabModel);
         onTabRemovedFromModel(tabModel);
       })
-      .on('tabsLord:tabModelUpdated', (e, tabModel) => {
-        log('Global event: Tab model updated', e, tabModel);
-        onTabModelUpdated(tabModel);
-      })
-      .on('tabsLord:allTabsUnselected', e => {
-        log('Global event: All tabs unselected', e);
-        $('.sidebar-tab-row').removeClass('sidebar-tab-selected'); // removing selection from all nodes
+      .on('tabsLord:tabModelsUpdated', (e, data) => {
+        log('Global event: Tab model updated', e, data);
+        onTabModelsUpdated(data.models);
       })
       .on('click.sidebar', '#sidebar-reset-search-button', $.proxy(e => {
         $('#sidebar-search-box').val('');
@@ -346,7 +346,7 @@ function onReady() {
     model.getWindowModels().forEach(windowModel => {
       const menuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
       const firstTabModel = model.getTabsByWindowGuid(windowModel.windowGuid)[0];
-      const menuText = windowModel.title === 'Window' ? '"' + firstTabModel.title + '" (by first tab)' : '"' + windowModel.title + '"';
+      const menuText = windowModel.title === 'Window' ? '"' + firstTabModel.title + '" (first tab)' : '"' + windowModel.title + '"';
       $('<a>').addClass('sidebar-context-menu-item-anchor')
       .attr('href', '#')
       .text(menuText)
@@ -520,8 +520,8 @@ function onReady() {
     updateView();
   }
 
-  function onTabModelUpdated(tabModel: ITabModel) {
-    if (tabModel) {
+  function onTabModelsUpdated(tabModels: ITabModel[]) {
+    tabModels.forEach(tabModel => {
       const tabElement = getElementByGuid(tabModel.tabGuid);
       tabElement.children('.sidebar-tab-anchor').attr('title', tabModel.url);
       tabElement.children('.sidebar-tab-anchor').text(tabModel.title);
@@ -529,7 +529,26 @@ function onReady() {
       tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
       tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
       tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', tabModel.selected);
-    }
+      tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', tabModel.selected);
+      tabElement.toggleClass('sidebar-tab-hidden', !tabModel.matchesFilter);
+    });
+  }
+
+  function onWindowModelsUpdated(windowModels: IWindowModel[]) {
+    windowModels.forEach(windowModel => {
+      const windowElement = getElementByGuid(windowModel.windowGuid);
+      if (windowElement) {
+        let windowText: string;
+        if (windowModel.tabsToHide > 0 && windowModel.tabsToHide < windowModel.tabsCount) {
+          windowText = windowModel.title + ' (' + (windowModel.tabsCount - windowModel.tabsToHide) + '/' + windowModel.tabsCount + ')';
+        }
+        else {
+          windowText = windowModel.title + ' (' + windowModel.tabsCount + ')';
+        }
+        windowElement.toggleClass('sidebar-window-hidden', windowModel.tabsToHide === windowModel.tabsCount);
+        windowElement.children('.sidebar-window-anchor').text(windowText);
+      }
+    });
   }
 
   function removeTabNodeByGuid(tabGuid: string) {
@@ -546,20 +565,18 @@ function onReady() {
     const windowsWithVisibleTabs = new Map();
     // TODO Why do I need two classes here?
     $('#sidebar-reset-search-button').toggleClass('sidebar-reset-search-button-active', searchPattern.length > 0);
-    model.getTabModels().forEach(tabModel => {
+    model.changeSearchPattern(searchPattern);
+    /*model.getTabModels().forEach(tabModel => {
       const tabElement = getElementByGuid(tabModel.tabGuid);
       if (searchPattern.length === 0) { // making visible due to search reset
-        tabElement.removeClass('sidebar-tab-hidden');
         tabElement.removeClass('sidebar-tab-search-match');
         windowsWithVisibleTabs.set(tabModel.windowModel.windowGuid, (windowsWithVisibleTabs.get(tabModel.windowModel.windowGuid) || 0) + 1);
       }
       else if ((tabModel.title && tabModel.title.toLowerCase().indexOf(searchPattern) >= 0) || (tabModel.url && tabModel.url.toLowerCase().indexOf(searchPattern) >= 0)) { // showing as match
-        tabElement.removeClass('sidebar-tab-hidden');
         tabElement.addClass('sidebar-tab-search-match');
         windowsWithVisibleTabs.set(tabModel.windowModel.windowGuid, (windowsWithVisibleTabs.get(tabModel.windowModel.windowGuid) || 0) + 1);
       }
       else { // hiding as mismatch
-        tabElement.addClass('sidebar-tab-hidden');
         tabElement.removeClass('sidebar-tab-search-match');
       }
     });
@@ -575,7 +592,7 @@ function onReady() {
         windowText = windowModel.title + ' (' + windowModel.tabsCount + ')';
       }
       windowElement.children('.sidebar-window-anchor').text(windowText);
-    });
+    });*/
   }
 
   function onChromeWindowCreated(window: chrome.windows.Window) {
