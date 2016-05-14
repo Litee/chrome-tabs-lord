@@ -1,0 +1,1 @@
+"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --user-data-dir=%USERPROFILE%\Temp\dev-chrome\
