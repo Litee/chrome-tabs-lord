@@ -11,7 +11,7 @@ chrome.browserAction.onClicked.addListener(() => {
     console.log('Last focused window found', currentWindow);
     getOrCreateSidebarWindow(sidebarWindow => {
       if (sidebarWindow.id !== currentWindow.id) {
-        updateWindowsPosition(sidebarWindow, currentWindow);
+        updateWindowsPosition(sidebarWindow, currentWindow, true);
       }
     });
   });
@@ -25,7 +25,7 @@ chrome.browserAction.onClicked.addListener(() => {
         console.log('Window focused', focusedWindow);
         if (focusedWindow.type === 'normal') {
           getOrCreateSidebarWindow(sidebarWindow => {
-            updateWindowsPosition(sidebarWindow, focusedWindow);
+            updateWindowsPosition(sidebarWindow, focusedWindow, false);
           });
         }
       });
@@ -60,7 +60,7 @@ chrome.browserAction.onClicked.addListener(() => {
 
 
   let updatingWindowPosition = false;
-  function updateWindowsPosition(sidebarWindow: chrome.windows.Window, currentWindow: chrome.windows.Window) {
+  function updateWindowsPosition(sidebarWindow: chrome.windows.Window, currentWindow: chrome.windows.Window, focusOnSidebar: boolean) {
     if (updatingWindowPosition) {
       return;
     }
@@ -96,9 +96,22 @@ chrome.browserAction.onClicked.addListener(() => {
         height: workAreaHeight
       }, () => {
         chrome.windows.update(currentWindow.id, { left: workAreaLeft + preferredSidebarWidth, width: workAreaWidth - preferredSidebarWidth, top: workAreaTop, height: workAreaHeight, focused: true }, () => {
-          setTimeout(() => {
-            updatingWindowPosition = false;
-          }, 500);
+          if (focusOnSidebar) {
+            setTimeout(() => {
+              chrome.windows.update(sidebarWindow.id, {
+                focused: true,
+              }, () => {
+                setTimeout(() => {
+                  updatingWindowPosition = false;
+                }, 100);
+              });
+            }, 100);
+          }
+          else {
+            setTimeout(() => {
+              updatingWindowPosition = false;
+            }, 100);
+          }
         });
       });
     });

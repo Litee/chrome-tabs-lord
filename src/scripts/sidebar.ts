@@ -601,16 +601,20 @@ function onReady() {
       log('Windows lost focus');
     }
     else {
-      chrome.windows.get(windowId, {populate:true}, window => {
-        if (window.type === 'normal') {
-          const activeTab = window.tabs.find(tab => {
+      chrome.windows.get(windowId, {populate:true}, chromeWindow => {
+      if (chromeWindow.type === 'normal') {
+          const activeTab = chromeWindow.tabs.find(tab => {
             return tab.active;
           });
-          // TODO Too many activation - think how to optimize
+          // TODO Too many activations - think how to optimize
           if (activeTab) {
-            log('Activating tab because window was focused', window, activeTab);
+            log('Activating tab because window was focused', chromeWindow, activeTab);
             onChromeTabActivated({tabId: activeTab.id, windowId: activeTab.windowId});
           }
+        }
+        else if (chromeWindow.tabs.length > 0 && chromeWindow.tabs[0].url === 'chrome-extension://dnlmfamjfefjpjokgoafhofbabkipmaa/sidebar.html') { // Sidebar window activated
+          debug('Activating search...');
+          $('#sidebar-search-box').focus();
         }
       });
     }
