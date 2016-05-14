@@ -205,7 +205,7 @@ function onReady() {
     const windowGuid: string = windowElement[0].id;
     const oldText = model.getWindowModelByGuid(windowGuid).title;
     windowElement.children('.sidebar-window-row').hide();
-    windowElement.children('.sidebar-window-anchor').hide();
+    windowElement.children('.sidebar-window-anchor').toggleClass('sidebar-window-anchor-edit-mode', true);
     const inputElement = $('<input>', {
       'value': oldText,
       'blur': () => {
@@ -233,7 +233,7 @@ function onReady() {
     const windowNodeElement = getElementByGuid(windowGuid);
     model.renameWindow(windowGuid, newTitle);
     windowNodeElement.children('.sidebar-window-row').show();
-    windowNodeElement.children('.sidebar-window-anchor').show();
+    windowNodeElement.children('.sidebar-window-anchor').toggleClass('sidebar-window-anchor-edit-mode', false);
     windowNodeElement.children('input').remove();
     updateView();
   }

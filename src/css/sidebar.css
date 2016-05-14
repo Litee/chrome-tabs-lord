@@ -136,6 +136,10 @@
     left: 30px;
 }
 
+.sidebar-window-anchor-edit-mode {
+	display: none;
+}
+
 .sidebar-context-menu-item-anchor {
     display: block;
     overflow: hidden;
