@@ -153,7 +153,12 @@ export class Model {
             const existingTabBookmark = tabBookmarks ? tabBookmarks.find(tabBookmark => tabBookmark.url === tabModel.url) : undefined;
             if (existingTabBookmark) {
               debug('Tab bookmark found. Removing...', existingTabBookmark, tabModel, tabBookmarks);
-              chrome.bookmarks.remove(existingTabBookmark.id);
+              try {
+                chrome.bookmarks.remove(existingTabBookmark.id);
+              }
+              catch (err) {
+                console.warn(err);
+              }
             }
           });
         }
@@ -436,6 +441,18 @@ export class Model {
     this._tabs.forEach(tabModel => {
       tabModel.selected = false;
     });
+    $(document).trigger('tabsLord:allTabsUnselected');
+  }
+
+  public selectTabsRange(windowGuid: string, start: number, end: number) {
+    this.unselectAllTabs();
+    for (let i = start; i <= end; i++) {
+      const tabModelToSelect = Array.from(this._tabs.values()).find(tabModel => tabModel.index === i && tabModel.windowModel.windowGuid === windowGuid);
+      if (tabModelToSelect) {
+        tabModelToSelect.selected = true;
+        $(document).trigger('tabsLord:tabModelUpdated', [tabModelToSelect]);
+      }
+    }
   }
 }
 

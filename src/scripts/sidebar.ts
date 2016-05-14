@@ -138,6 +138,10 @@ function onReady() {
         log('Global event: Tab model updated', e, tabModel);
         onTabModelUpdated(tabModel);
       })
+      .on('tabsLord:allTabsUnselected', e => {
+        log('Global event: All tabs unselected', e);
+        $('.sidebar-tab-row').removeClass('sidebar-tab-selected'); // removing selection from all nodes
+      })
       .on('click.sidebar', '#sidebar-reset-search-button', $.proxy(e => {
         $('#sidebar-search-box').val('');
         search('');
@@ -254,6 +258,8 @@ function onReady() {
     }
   }
 
+  let lastClickedTabModelForShiftSelect: ITabModel;
+
   function onTabNodeClicked(e: any) {
     hideContextMenu();
     const tabNode = e.currentTarget;
@@ -265,19 +271,29 @@ function onReady() {
       return;
     }
     const tabElement = getElementByGuid(tabGuid);
-    if (e.ctrlKey) {
+    if (!e.shiftKey) {
+      lastClickedTabModelForShiftSelect = tabModel;
+    }
+    if (e.ctrlKey) { // Add to selection
       const newTabSelectedValue = !tabModel.selected;
       model.updateTabModel(tabGuid, {selected: newTabSelectedValue});
-      tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', newTabSelectedValue);
     }
-    else if (tabModel.windowModel && tabModel.windowModel.hibernated) {
-      $('.sidebar-tab-row').removeClass('sidebar-tab-selected'); // removing selection from all nodes
+    else if (e.shiftKey) {
+      if (lastClickedTabModelForShiftSelect && lastClickedTabModelForShiftSelect.windowModel.windowGuid === tabModel.windowModel.windowGuid) { // selection within same window
+        const selectionStart = Math.min(lastClickedTabModelForShiftSelect.index, tabModel.index);
+        const selectionEnd = Math.max(lastClickedTabModelForShiftSelect.index, tabModel.index);
+        model.selectTabsRange(tabModel.windowModel.windowGuid, selectionStart, selectionEnd);
+      }
+      else {
+        // TODO
+      }
+    }
+    else if (tabModel.windowModel && tabModel.windowModel.hibernated) { // Select tab in hibernated window - nothing to activate
       model.unselectAllTabs();
       model.updateTabModel(tabGuid, {selected: true});
-      tabElement.children('.sidebar-tab-row').addClass('sidebar-tab-selected');
     }
     else {
-      chrome.tabs.get(tabModel.tabId, tab => {
+      chrome.tabs.get(tabModel.tabId, tab => { // Select tab in normal window - activate the tab
         chrome.windows.get(tab.windowId, {}, window => {
           if (!tab.active) {
             log('Activating tab because node was selected', tab);
@@ -511,6 +527,8 @@ function onReady() {
       tabElement.children('.sidebar-tab-anchor').text(tabModel.title);
       tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + tabModel.favIconUrl + ')');
       tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
+      tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
+      tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', tabModel.selected);
     }
   }
 
@@ -669,6 +687,7 @@ function onReady() {
   function onChromeTabActivated(activeInfo: chrome.tabs.TabActiveInfo) {
     log('Tab activated', activeInfo);
     const activatedTabModel = model.getTabModelById(activeInfo.tabId);
+    lastClickedTabModelForShiftSelect = activatedTabModel;
     log('Selecting tab', activatedTabModel);
     $('.sidebar-tab-row').removeClass('sidebar-tab-selected'); // removing selection from all nodes
     model.unselectAllTabs();
