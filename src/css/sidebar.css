@@ -64,7 +64,7 @@
 }
 
 .sidebar-window-icon:hover, .sidebar-window-icon:focus, .sidebar-window-icon:active {
-  opacity:1;
+    opacity:1;
 }
 
 .sidebar-window-node-expanded > .sidebar-window-icon-expand-collapse {
@@ -83,10 +83,6 @@
 	background-image: url("/images/edit.png");
 	float: right;
 	opacity: 0.5;
-}
-
-.sidebar-window-hibernated .sidebar-window-anchor {
-	font-style: italic;
 }
 
 .sidebar-window-icon-sleep-wake {
@@ -180,8 +176,12 @@
 }
 
 .sidebar-window-row {
-	background-color: #A0A0A0;
+	background-color: #FFD800;
 	height: 24px;
+}
+
+.sidebar-window-hibernated .sidebar-window-row {
+	background-color: #A0A0A0;
 }
 
 .sidebar-tab-snoozed .sidebar-tab-anchor {
