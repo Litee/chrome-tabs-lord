@@ -6,6 +6,7 @@
   "ambientDependencies": {
     "chrome": "registry:dt/chrome#0.0.0+20160509083626",
     "chrome-app": "registry:dt/chrome-app#0.0.0+20160509082349",
+    "df-visible": "registry:dt/df-visible#0.0.0+20160514174337",
     "filesystem": "registry:dt/filesystem#0.0.0+20160316155526",
     "filewriter": "registry:dt/filewriter#0.0.0+20160316155526",
     "jquery": "registry:dt/jquery#1.10.0+20160417213236",
