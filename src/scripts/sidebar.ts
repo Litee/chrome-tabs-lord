@@ -16,6 +16,7 @@ function onReady() {
     localStorage.setItem('tabs-lord-preferred-sidebar-width', '' + window.outerWidth);
   });
 
+  const externsionVersion = chrome.runtime.getManifest().version;
   const sidebarContainer = $('#sidebar-nodes-container').addClass('tabs-lorg-nav-root');
 
   const templateWindowNode = $('<li>').addClass('sidebar-window-node').addClass('sidebar-window-node-expanded');
@@ -464,7 +465,7 @@ function onReady() {
         const windowElement = getElementByGuid(windowModel.windowGuid);
         windowElement.children('.sidebar-window-anchor').text(windowModel.title + ' (' + windowModel.tabsCount + ')');
       });
-      document.title = 'Chrome - Tabs Lord (' + model.getTabsCount() + ')';
+      document.title = 'Tabs Lord v' + externsionVersion + ' (' + model.getTabsCount() + ' tabs)';
     }, 100);
   }
 
