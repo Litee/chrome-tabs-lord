@@ -308,13 +308,19 @@ export class Model {
   public renameWindow(windowGuid: string, newTitle: string): void {
     const windowModelToRename = Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
     if (windowModelToRename.hibernated) {
-    this.getOrCreateWindowBookmark(windowModelToRename, windowBookmark => {
-        chrome.bookmarks.update(windowBookmark.id, {title: newTitle});
+      this.getOrCreateWindowBookmark(windowModelToRename, windowBookmark => {
+        chrome.bookmarks.update(windowBookmark.id, {title: newTitle}, () => {
+          windowModelToRename.title = newTitle;
+          this.persist();
+          $(document).trigger('tabsLord:windowModelsUpdated', [{ models: [windowModelToRename] }]);
+        });
       });
     }
-    windowModelToRename.title = newTitle;
-    this.persist();
-    $(document).trigger('tabsLord:windowModelsUpdated', [{ models: [windowModelToRename] }]);
+    else {
+      windowModelToRename.title = newTitle;
+      this.persist();
+      $(document).trigger('tabsLord:windowModelsUpdated', [{ models: [windowModelToRename] }]);
+    }
   }
 
   public hibernateWindow(windowGuid: string, newTitle: string) {
