@@ -497,8 +497,7 @@ function onReady() {
   function onTabAddedToModel(tabModel: ITabModel) {
     const windowElement = getElementByGuid(tabModel.windowModel.windowGuid);
     const tabsListElement = windowElement.children('.sidebar-tabs-list')[0];
-    const tabElement = templateTabNode.clone()
-      .attr('id', tabModel.tabGuid);
+    const tabElement = templateTabNode.clone().attr('id', tabModel.tabGuid);
     tabElement.children('.sidebar-tab-anchor').text(tabModel.title).attr('title', tabModel.url);
     tabElement.children('.sidebar-tab-favicon').css('backgroundImage', tabModel.icon ? 'url(' + tabModel.icon + ')' : '');
     tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
@@ -525,7 +524,7 @@ function onReady() {
       const tabElement = getElementByGuid(tabModel.tabGuid);
       tabElement.children('.sidebar-tab-anchor').attr('title', tabModel.url);
       tabElement.children('.sidebar-tab-anchor').text(tabModel.title);
-      tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + tabModel.favIconUrl + ')');
+      tabElement.children('.sidebar-tab-favicon').css('backgroundImage', tabModel.icon ? 'url(' + tabModel.favIconUrl + ')' : '');
       tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
       tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
       tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', tabModel.selected);
