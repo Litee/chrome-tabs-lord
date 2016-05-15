@@ -103,14 +103,14 @@ chrome.browserAction.onClicked.addListener(() => {
               }, () => {
                 setTimeout(() => {
                   updatingWindowPosition = false;
-                }, 100);
+                }, 500);
               });
-            }, 100);
+            }, 500);
           }
           else {
             setTimeout(() => {
               updatingWindowPosition = false;
-            }, 100);
+            }, 500);
           }
         });
       });
