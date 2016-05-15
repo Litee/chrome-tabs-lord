@@ -499,7 +499,7 @@ function onReady() {
     const tabElement = templateTabNode.clone()
       .attr('id', tabModel.tabGuid);
     tabElement.children('.sidebar-tab-anchor').text(tabModel.title).attr('title', tabModel.url);
-    tabElement.children('.sidebar-tab-favicon').css('backgroundImage', 'url(' + tabModel.icon + ')');
+    tabElement.children('.sidebar-tab-favicon').css('backgroundImage', tabModel.icon ? 'url(' + tabModel.icon + ')' : '');
     tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
     if (tabModel.index < 0) {
       tabsListElement.appendChild(tabElement[0]);
