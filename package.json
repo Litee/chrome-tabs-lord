@@ -10,6 +10,12 @@
     "gulp-tslint": "^5.0.0",
     "gulp-typescript": "^2.13.3",
     "gulp-zip": "^3.2.0",
+    "jasmine-core": "^2.4.1",
+    "karma": "^0.13.22",
+    "karma-chrome-launcher": "^1.0.1",
+    "karma-jasmine": "^1.0.2",
+    "karma-phantomjs-launcher": "^1.0.0",
+    "phantomjs-prebuilt": "^2.1.7",
     "tslint": "^3.9.0",
     "typescript": "^1.8.10",
     "typings": "^0.8.1"

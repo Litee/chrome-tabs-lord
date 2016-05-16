@@ -7,6 +7,7 @@ const zip = require('gulp-zip');
 const del = require('del');
 const distExplodedDir = 'dist_exploded';
 const distScriptsDir = distExplodedDir + '/scripts';
+const distTestsDir = distExplodedDir + '/tests';
 
 gulp.task('clean', () => {
   del(distExplodedDir);
@@ -50,6 +51,21 @@ gulp.task('build-sidebar', () => {
 		.pipe(gulp.dest(distScriptsDir));
 });
 
+gulp.task('build-tests', () => {
+  return gulp.src(['src/tests/modelTests.ts', 'src/scripts/sidebar.ts', 'src/scripts/model.ts', 'src/scripts/util.ts'])
+		.pipe(sourcemaps.init())
+		.pipe(ts({
+  noImplicitAny: true,
+  out: 'allTests.js',
+  noLib: true,
+  target: 'es2015',
+  module: 'amd',
+  removeComments : true
+		}))
+		.pipe(sourcemaps.write('.'))
+		.pipe(gulp.dest(distTestsDir));
+});
+
 gulp.task('package', () => {
   return gulp.src(['dist_exploded/**/*.*', 'LICENSE', '!dist_exploded/tests/**/*.*', , '!dist_exploded/scripts/jasmine-jquery/**/*.*'])
 		.pipe(zip('tabs-lord-extension-' + new Date().toJSON().replace(new RegExp(':', 'g'), '-') + '.zip'))
@@ -59,5 +75,5 @@ gulp.task('package', () => {
 gulp.task('default', ['clean', 'ts-lint', 'build-browser-action', 'build-sidebar', 'copy-other-files']);
 
 gulp.task('watch', () => {
-  gulp.watch('src/**/*', ['ts-lint', 'build-browser-action', 'build-sidebar', 'copy-other-files']);
+  gulp.watch('src/**/*', ['ts-lint', 'build-browser-action', 'build-sidebar', 'build-tests', 'copy-other-files']);
 });
