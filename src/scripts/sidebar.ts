@@ -346,7 +346,7 @@ function onReady() {
     model.getWindowModels().forEach(windowModel => {
       const menuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
       const firstTabModel = model.getTabsByWindowGuid(windowModel.windowGuid)[0];
-      const menuText = windowModel.title === 'Window' ? '"' + firstTabModel.title + '" (first tab)' : '"' + windowModel.title + '"';
+      const menuText = (windowModel.title === 'Window' ? (firstTabModel ? '"' + firstTabModel.title + '" (first tab)' : 'Anonymous window without tabs') : '"' + windowModel.title + '"');
       $('<a>').addClass('sidebar-context-menu-item-anchor')
       .attr('href', '#')
       .text(menuText)
