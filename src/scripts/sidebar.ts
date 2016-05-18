@@ -103,7 +103,7 @@ function onReady() {
         startWindowNodeEdit($(e.currentTarget.parentNode));
       }, this))
       .on('click.sidebar', '.sidebar-window-icon-sleep-wake', $.proxy(e => {
-        snoozeOrWakeWindow($(e.currentTarget.parentNode));
+        hibernateOrWakeUpWindow($(e.currentTarget.parentNode));
       }, this));
 
     $(document)
@@ -148,56 +148,67 @@ function onReady() {
       }, this));
   }
 
-  function snoozeOrWakeWindow(windowNodeElement: JQuery) {
+  function hibernateOrWakeUpWindow(windowNodeElement: JQuery) {
     const windowGuid = windowNodeElement[0].id;
     const windowModel = model.getWindowModelByGuid(windowGuid);
-    if (windowModel.hibernated) { // wake up!
-      const tabModels = model.getTabsByWindowGuid(windowModel.windowGuid);
-      debug('Restoring window model', windowModel, tabModels);
-      chrome.windows.create({
-        type: 'normal',
-        focused: true,
-        url: tabModels.length > 0 ? tabModels[0].url : undefined
-      }, window => {
-        debug('Window restored', window, windowModel);
-        const newWindowModel = model.getWindowModelById(window.id);
-        if (newWindowModel) {
-          model.renameWindow(newWindowModel.windowGuid, windowModel.title);
-        }
-        tabModels.slice(1).forEach(tabModel => {
-          debug('Restoring tab model', tabModel);
-          chrome.tabs.create({
-            windowId: window.id,
-            url: tabModel.url,
-            active: false
-          }, tab => {
-            debug('Tab restored', tab, tabModel);
-            model.deleteTabModel(tabModel.tabGuid);
-          });
-        });
-        model.deleteWindowModel(windowGuid);
-        updateView();
+    if (!windowModel) {
+      warn('Window model not found when trying to hibernate/wake up window', windowNodeElement);
+    }
+    if (windowModel.hibernated) {
+      wakeUpWindow(windowModel);
+    }
+    else {
+      hibernateWindow(windowModel);
+    }
+  }
+
+  function wakeUpWindow(windowModel: IWindowModel) {
+    const tabModels = model.getTabsByWindowGuid(windowModel.windowGuid);
+    debug('Restoring window model', windowModel, tabModels);
+    chrome.windows.create({
+    type: 'normal',
+    focused: true,
+    url: tabModels.length > 0 ? tabModels[0].url : undefined
+    }, window => {
+    debug('Window restored', window, windowModel);
+    const newWindowModel = model.getWindowModelById(window.id);
+    if (newWindowModel) {
+      model.renameWindow(newWindowModel.windowGuid, windowModel.title);
+    }
+    tabModels.slice(1).forEach(tabModel => {
+      debug('Restoring tab model', tabModel);
+      chrome.tabs.create({
+        windowId: window.id,
+        url: tabModel.url,
+        active: false
+      }, tab => {
+        debug('Tab restored', tab, tabModel);
+        model.deleteTabModel(tabModel.tabGuid);
       });
+    });
+    model.deleteWindowModel(windowModel.windowGuid);
+    updateView();
+    });
+  }
+
+  function hibernateWindow(windowModel: IWindowModel) {
+    const unhibernatedWindowsCount = model.getWindowModels().filter(_windowModel => !_windowModel.hibernated).length;
+    if (unhibernatedWindowsCount === 1) {
+    // TODO Disable hibernation if the last window
+    return;
     }
-    else { // go to sleep
-      const unhibernatedWindowsCount = model.getWindowModels().filter(_windowModel => !_windowModel.hibernated).length;
-      if (unhibernatedWindowsCount === 1) {
-        // TODO Disable hibernation if the last window
-        return;
-      }
-      let windowTitle = windowModel.title;
-      if (windowTitle === 'Window') {
-        windowTitle = prompt('Enter window title to distinguish between hibernated items', '');
-        if (!windowTitle) {
-          return;
-        }
-      }
-      model.hibernateWindow(windowGuid, windowTitle);
-      chrome.windows.remove(windowModel.windowId);
-      const windowElement = getElementByGuid(windowModel.windowGuid);
-      windowElement.addClass('sidebar-window-hibernated');
-      updateView();
+    let windowTitle = windowModel.title;
+    if (windowTitle === 'Window') {
+    windowTitle = prompt('Enter window title to distinguish between hibernated items', '');
+    if (!windowTitle) {
+      return;
     }
+    }
+    model.hibernateWindow(windowModel.windowGuid, windowTitle);
+    chrome.windows.remove(windowModel.windowId);
+    const windowElement = getElementByGuid(windowModel.windowGuid);
+    windowElement.addClass('sidebar-window-hibernated');
+    updateView();
   }
 
   function startWindowNodeEdit(windowElement: JQuery) {
@@ -567,33 +578,6 @@ function onReady() {
     // TODO Why do I need two classes here?
     $('#sidebar-reset-search-button').toggleClass('sidebar-reset-search-button-active', searchPattern.length > 0);
     model.changeSearchPattern(searchPattern);
-    /*model.getTabModels().forEach(tabModel => {
-      const tabElement = getElementByGuid(tabModel.tabGuid);
-      if (searchPattern.length === 0) { // making visible due to search reset
-        tabElement.removeClass('sidebar-tab-search-match');
-        windowsWithVisibleTabs.set(tabModel.windowModel.windowGuid, (windowsWithVisibleTabs.get(tabModel.windowModel.windowGuid) || 0) + 1);
-      }
-      else if ((tabModel.title && tabModel.title.toLowerCase().indexOf(searchPattern) >= 0) || (tabModel.url && tabModel.url.toLowerCase().indexOf(searchPattern) >= 0)) { // showing as match
-        tabElement.addClass('sidebar-tab-search-match');
-        windowsWithVisibleTabs.set(tabModel.windowModel.windowGuid, (windowsWithVisibleTabs.get(tabModel.windowModel.windowGuid) || 0) + 1);
-      }
-      else { // hiding as mismatch
-        tabElement.removeClass('sidebar-tab-search-match');
-      }
-    });
-    model.getWindowModels().forEach(windowModel => {
-      const windowElement = getElementByGuid(windowModel.windowGuid);
-      const visibleTabsCount = windowsWithVisibleTabs.get(windowModel.windowGuid) || 0;
-      windowElement.toggleClass('sidebar-window-hidden', visibleTabsCount === 0);
-      let windowText: string;
-      if (visibleTabsCount < windowModel.tabsCount) {
-        windowText = windowModel.title + ' (' + visibleTabsCount + '/' + windowModel.tabsCount + ')';
-      }
-      else {
-        windowText = windowModel.title + ' (' + windowModel.tabsCount + ')';
-      }
-      windowElement.children('.sidebar-window-anchor').text(windowText);
-    });*/
   }
 
   function onChromeWindowCreated(window: chrome.windows.Window) {
