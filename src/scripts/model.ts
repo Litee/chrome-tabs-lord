@@ -170,7 +170,7 @@ export class Model {
     this.getOrCreateRootBookmark(rootBookmark => {
       chrome.bookmarks.getChildren(rootBookmark.id, windowBookmarks => {
         if (windowBookmarks) {
-          windowBookmarks.sort(windowBookmark => windowBookmark.title).forEach(windowBookmark => {
+          windowBookmarks.sort((a, b) => a.title < b.title ? -1 : (a.title > b.title ? 1 : 0)).forEach(windowBookmark => {
             log('Restoring window from bookmarks', windowBookmark);
             const windowGuid = this.addWindowModel(undefined, Model.HIBERNATED_WINDOW_ID, windowBookmark.title, true);
             chrome.bookmarks.getChildren(windowBookmark.id, tabBookmarks => {

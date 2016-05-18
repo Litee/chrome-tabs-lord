@@ -338,10 +338,12 @@ function onReady() {
     const result = $('<div></div>').addClass('sidebar-context-menu');
     const menuList = $('<span>Move to window:</span>').appendTo(result);
     const moveMenuUl = $('<ul>').addClass('sidebar-context-menu-items-list').appendTo(menuList);
-    const selectedTabModels = model.getTabModels().filter(tabModel => tabModel.selected);
+    let selectedTabModels = model.getTabModels().filter(tabModel => tabModel.selected);
     const contextTabModel = model.getTabModelByGuid(contextTabGuid);
-    if (selectedTabModels.length === 0) {
-      selectedTabModels.push(contextTabModel);
+    if (selectedTabModels.length <= 1) {
+      selectedTabModels = [contextTabModel];
+      model.unselectAllTabs();
+      model.updateTabModel(contextTabModel.tabGuid, { selected: true });
     }
     model.getWindowModels().forEach(windowModel => {
       const menuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
