@@ -95,7 +95,10 @@ chrome.browserAction.onClicked.addListener(() => {
         width: preferredSidebarWidth,
         height: workAreaHeight
       }, () => {
-        chrome.windows.update(currentWindow.id, { left: workAreaLeft + preferredSidebarWidth, width: workAreaWidth - preferredSidebarWidth, top: workAreaTop, height: workAreaHeight, focused: true }, () => {
+        const recommendedLeftPosition = Math.max(workAreaLeft + preferredSidebarWidth, currentWindow.left);
+        const recommendedWidth = Math.max(currentWindow.width - (recommendedLeftPosition - currentWindow.left), 100);
+        console.debug('Updating window position', recommendedLeftPosition, recommendedWidth);
+        chrome.windows.update(currentWindow.id, { left: recommendedLeftPosition, width: recommendedWidth, top: workAreaTop, height: workAreaHeight, focused: true }, () => {
           if (focusOnSidebar) {
             setTimeout(() => {
               chrome.windows.update(sidebarWindow.id, {
