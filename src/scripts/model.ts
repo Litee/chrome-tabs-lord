@@ -64,11 +64,10 @@ export class Model {
           const persistentTabModel = {
             tabGuid: tabModel.tabGuid,
             windowGuid: tabModel.windowModel.windowGuid,
-            icon: tabModel.icon,
+            favIconUrl: tabModel.favIconUrl,
             index: tabModel.index,
             url: tabModel.url,
-            title: tabModel.title,
-            favIconUrl: tabModel.favIconUrl
+            title: tabModel.title
           };
           return persistentTabModel;
         })
@@ -198,7 +197,7 @@ export class Model {
         if (windowModel) {
           if (windowModel.hibernated) {
             log('Restoring tab from state', tabModel);
-            this.addTabModel(windowModel.windowGuid, Model.HIBERNATED_TAB_ID, tabModel.tabGuid, tabModel.title, tabModel.icon, tabModel.url, tabModel.index, false, false);
+            this.addTabModel(windowModel.windowGuid, Model.HIBERNATED_TAB_ID, tabModel.tabGuid, tabModel.title, tabModel.favIconUrl, tabModel.url, tabModel.index, false, false);
           }
         }
       });
@@ -372,7 +371,7 @@ export class Model {
     return this._tabs.size;
   }
 
-  public addTabModel(windowGuid: string, tabId: number, tabGuid: string, tabTitle: string, tabIcon: string, tabUrl: string, tabIndex: number, isTabSelected: boolean, isTabAudible: boolean): void {
+  public addTabModel(windowGuid: string, tabId: number, tabGuid: string, tabTitle: string, tabFavIconUrl: string, tabUrl: string, tabIndex: number, isTabSelected: boolean, isTabAudible: boolean): void {
     debug('Adding tab model', arguments);
     const windowModel = this.getMutableWindowModelByGuid(windowGuid);
     if (!windowModel) {
@@ -383,7 +382,7 @@ export class Model {
     const tabModel = new TabModel(validTabGuid, windowModel);
     tabModel.tabId = tabId;
     tabModel.title = tabTitle || tabUrl;
-    tabModel.icon = tabIcon;
+    tabModel.favIconUrl = tabFavIconUrl;
     tabModel.url = tabUrl;
     tabModel.index = tabIndex;
     tabModel.normalizedUrl = this.normalizeUrlForDuplicatesFinding(tabUrl);
@@ -571,7 +570,6 @@ export interface IPersistentTabModel {
   tabGuid: string;
   windowGuid: string;
   title: string;
-  icon: string;
   index: number;
   url: string;
   favIconUrl: string;
@@ -583,7 +581,6 @@ export interface ITabModel {
   windowModel: IWindowModel;
   selected: boolean;
   title: string;
-  icon: string;
   index: number;
   url: string;
   normalizedUrl: string;
@@ -600,7 +597,6 @@ class TabModel implements ITabModel {
   windowModel: IWindowModel;
   selected: boolean = false;
   title: string = '<Empty>';
-  icon: string;
   index: number = 0;
   url: string;
   normalizedUrl: string;

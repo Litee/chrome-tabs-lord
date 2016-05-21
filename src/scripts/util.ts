@@ -2,6 +2,7 @@
 /// <reference path="../../typings/lib.es6.d.ts" />
 
 const LOG = true;
+export const SIDEBAR_EXTENSION_URL = 'chrome-extension://dnlmfamjfefjpjokgoafhofbabkipmaa/sidebar.html';
 
 export function debug(message?: any, ...additionalParams: any[]) {
   if (LOG) {
@@ -17,4 +18,8 @@ export function log(message?: any, ...additionalParams: any[]) {
 
 export function warn(message?: any, ...additionalParams: any[]) {
   console.warn(message, ...additionalParams);
+}
+
+export function isSidebarExtensionUrl(url: string) : boolean {
+  return url === SIDEBAR_EXTENSION_URL;
 }

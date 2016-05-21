@@ -2,7 +2,7 @@
 /// <reference path="../../typings/lib.es6.d.ts" />
 /// <reference path="../../typings/browser.d.ts" />
 
-import {log, debug, warn} from './util';
+import {log, debug, warn, isSidebarExtensionUrl} from './util';
 import {Model, ITabModel, IWindowModel, TabModelUpdateInfo} from './model';
 
 $(document).ready(onReady);
@@ -512,7 +512,7 @@ function onReady() {
     const tabsListElement = windowElement.children('.sidebar-tabs-list')[0];
     const tabElement = templateTabNode.clone().attr('id', tabModel.tabGuid);
     tabElement.children('.sidebar-tab-anchor').text(tabModel.title).attr('title', tabModel.url);
-    tabElement.children('.sidebar-tab-favicon').css('backgroundImage', tabModel.icon ? 'url(' + tabModel.icon + ')' : '');
+    tabElement.children('.sidebar-tab-favicon').css('backgroundImage', tabModel.favIconUrl ? 'url(' + tabModel.favIconUrl + ')' : '');
     tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
     if (tabModel.index < 0) {
       tabsListElement.appendChild(tabElement[0]);
@@ -537,7 +537,7 @@ function onReady() {
       const tabElement = getElementByGuid(tabModel.tabGuid);
       tabElement.children('.sidebar-tab-anchor').attr('title', tabModel.url);
       tabElement.children('.sidebar-tab-anchor').text(tabModel.title);
-      tabElement.children('.sidebar-tab-favicon').css('backgroundImage', tabModel.icon ? 'url(' + tabModel.favIconUrl + ')' : '');
+      tabElement.children('.sidebar-tab-favicon').css('backgroundImage', tabModel.favIconUrl ? 'url(' + tabModel.favIconUrl + ')' : '');
       tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
       tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
       tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', tabModel.selected);
@@ -614,7 +614,7 @@ function onReady() {
             onChromeTabActivated({tabId: activeTab.id, windowId: activeTab.windowId});
           }
         }
-        else if (chromeWindow.tabs.length > 0 && chromeWindow.tabs[0].url === 'chrome-extension://dnlmfamjfefjpjokgoafhofbabkipmaa/sidebar.html') { // Sidebar window activated
+        else if (chromeWindow.tabs.length > 0 && isSidebarExtensionUrl(chromeWindow.tabs[0].url)) { // Sidebar window activated
           debug('Activating search...');
           $('#sidebar-search-box').focus();
         }
@@ -627,7 +627,7 @@ function onReady() {
     const windowModel = model.getWindowModelById(tab.windowId);
     if (windowModel) {
       const tabTitle = tab.title || 'Loading...';
-      const tabFavIconUrl = correctFavIconUrl(tab.favIconUrl);
+      const tabFavIconUrl = correctFavIconUrl(tab.favIconUrl, tab.url);
       model.addTabModel(windowModel.windowGuid, tab.id, undefined, tabTitle, tabFavIconUrl, tab.url, tab.index, false, tab.audible);
     }
     else {
@@ -659,7 +659,7 @@ function onReady() {
       }
       const favIconUrl = changeInfo.favIconUrl;
       if (favIconUrl && tabModel.favIconUrl !== favIconUrl) {
-        updateInfo.favIconUrl = correctFavIconUrl(favIconUrl);
+        updateInfo.favIconUrl = correctFavIconUrl(favIconUrl, tabModel.url);
       }
       if (changeInfo.audible !== undefined) {
         log('Switching audible icon', changeInfo.audible);
@@ -669,11 +669,19 @@ function onReady() {
     updateView();
   }
 
-  function correctFavIconUrl(iconUrl: string) {
-    if (iconUrl && iconUrl.startsWith('chrome://theme/')) {
-      return undefined;
+  function correctFavIconUrl(favIconUrl: string, url: string) {
+    if (favIconUrl) {
+      if (favIconUrl.startsWith('chrome://theme/')) {
+        return undefined;
+      }
+      if (favIconUrl.startsWith('chrome://')) {
+        return favIconUrl;
+      }
     }
-    return iconUrl;
+    if (url) {
+      return 'chrome://favicon/' + url.replace(/#.*$/, '');
+    }
+    return favIconUrl;
   }
 
   function onChromeTabMoved(tabId: number, moveInfo: chrome.tabs.TabMoveInfo) {
