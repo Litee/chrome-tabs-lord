@@ -2,14 +2,12 @@
 /// <reference path="../../typings/lib.es6.d.ts" />
 /// <reference path="../../typings/browser.d.ts" />
 
-import {log, debug, warn, isSidebarExtensionUrl, SIDEBAR_EXTENSION_URL} from './util';
-
 chrome.browserAction.onClicked.addListener(() => {
 
-  log('Browser action called!');
+  logger.log('Browser action called!');
 
   chrome.windows.getCurrent(undefined, currentWindow => {
-    log('Last focused window found', currentWindow);
+    logger.log('Last focused window found', currentWindow);
     getOrCreateSidebarWindow(sidebarWindow => {
       if (sidebarWindow.id !== currentWindow.id) {
         updateWindowsPosition(sidebarWindow, currentWindow, true);
@@ -23,7 +21,7 @@ chrome.browserAction.onClicked.addListener(() => {
     if (windowId !== chrome.windows.WINDOW_ID_NONE) {
       // TODO Scroll to active tab in tree
       chrome.windows.get(windowId, {}, focusedWindow => {
-        log('Window focused', focusedWindow);
+      logger.log('Window focused', focusedWindow);
         if (focusedWindow.type === 'normal') {
           getOrCreateSidebarWindow(sidebarWindow => {
             updateWindowsPosition(sidebarWindow, focusedWindow, false);
@@ -32,22 +30,22 @@ chrome.browserAction.onClicked.addListener(() => {
       });
     }
     else {
-      log('Chrome windows lost focus');
+      logger.log('Chrome windows lost focus');
     }
   }
 
   function getOrCreateSidebarWindow(callback: ICreateSidebarWindowCallback) {
-    chrome.tabs.query({url: SIDEBAR_EXTENSION_URL}, sidebarTabs => {
-      log('Sidebar tabs found', sidebarTabs);
+    chrome.tabs.query({ url: util.SIDEBAR_EXTENSION_URL }, sidebarTabs => {
+      logger.log('Sidebar tabs found', sidebarTabs);
       if (sidebarTabs.length > 1) {
-        log('Killing extra sidebars...');
+        logger.log('Killing extra sidebars...');
         for (let i = sidebarTabs.length - 1; i > 0 ; i--) { // killing possible extra instances
           chrome.windows.remove(sidebarTabs[i].windowId);
           sidebarTabs.splice(i, 1);
         }
       }
       if (sidebarTabs.length === 0) {
-        chrome.windows.create({url: SIDEBAR_EXTENSION_URL, type: 'popup' }, sidebarWindow => {
+        chrome.windows.create({ url: util.SIDEBAR_EXTENSION_URL, type: 'popup' }, sidebarWindow => {
           callback(sidebarWindow);
         });
       }
@@ -66,9 +64,9 @@ chrome.browserAction.onClicked.addListener(() => {
       return;
     }
     updatingWindowPosition = true;
-    log('Updating windows position', sidebarWindow, currentWindow);
+    logger.log('Updating windows position', sidebarWindow, currentWindow);
     chrome.system.display.getInfo(displaysInfo => {
-      log('Identifying monitor for window', currentWindow, displaysInfo);
+      logger.log('Identifying monitor for window', currentWindow, displaysInfo);
       const windowMidX = currentWindow.left + currentWindow.width / 2;
       const windowMidY = currentWindow.top + currentWindow.height / 2;
       let bestDisplay = 0;
@@ -83,7 +81,7 @@ chrome.browserAction.onClicked.addListener(() => {
         }
       }
       const bestDisplayInfo = displaysInfo[bestDisplay];
-      log('Best display', bestDisplayInfo, currentWindow.id);
+      logger.log('Best display', bestDisplayInfo, currentWindow.id);
       const workAreaLeft = bestDisplayInfo.workArea.left;
       const workAreaTop = bestDisplayInfo.workArea.top;
       const workAreaHeight = bestDisplayInfo.workArea.height;
@@ -100,7 +98,7 @@ chrome.browserAction.onClicked.addListener(() => {
         // const recommendedWidth = Math.max(currentWindow.width - (recommendedLeftPosition - currentWindow.left), 100);
         const recommendedLeftPosition = workAreaLeft + preferredSidebarWidth;
         const recommendedWidth = workAreaWidth - preferredSidebarWidth;
-        debug('Updating window position', recommendedLeftPosition, recommendedWidth);
+        logger.debug('Updating window position', recommendedLeftPosition, recommendedWidth);
         chrome.windows.update(currentWindow.id, { left: recommendedLeftPosition, width: recommendedWidth, top: workAreaTop, height: workAreaHeight, focused: true }, () => {
           if (focusOnSidebar) {
             setTimeout(() => {
