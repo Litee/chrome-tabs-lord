@@ -1,6 +1,6 @@
 /// <reference no-default-lib="true"/>
 /// <reference path="../../typings/lib.es6.d.ts" />
-/// <reference path="../../typings/browser.d.ts" />
+/// <reference path="../../typings/index.d.ts" />
 
 $(document).ready(onReady);
 
@@ -163,28 +163,29 @@ function onReady() {
     const tabModels = model.getTabsByWindowGuid(windowModel.windowGuid);
     logger.debug('Restoring window model', windowModel, tabModels);
     chrome.windows.create({
-    type: 'normal',
-    focused: true,
-    url: tabModels.length > 0 ? tabModels[0].url : undefined
-    }, window => {
-    logger.debug('Window restored', window, windowModel);
-    const newWindowModel = model.getWindowModelById(window.id);
-    if (newWindowModel) {
-      model.renameWindow(newWindowModel.windowGuid, windowModel.title);
-    }
-    tabModels.slice(1).forEach(tabModel => {
-      logger.debug('Restoring tab model', tabModel);
-      chrome.tabs.create({
-        windowId: window.id,
-        url: tabModel.url,
-        active: false
-      }, tab => {
-        logger.debug('Tab restored', tab, tabModel);
-        model.deleteTabModel(tabModel.tabGuid);
+      type: 'normal',
+      focused: true,
+      url: tabModels.length > 0 ? tabModels[0].url : undefined
+      }, window => {
+      logger.debug('Window restored', window, windowModel);
+      const newWindowModel = model.getWindowModelById(window.id);
+      if (newWindowModel) {
+        model.renameWindow(newWindowModel.windowGuid, windowModel.title, () => {});
+      }
+      tabModels.slice(1).forEach(tabModel => {
+        logger.debug('Restoring tab model', tabModel);
+        chrome.tabs.create({
+          windowId: window.id,
+          url: tabModel.url,
+          active: false
+        }, tab => {
+          logger.debug('Tab restored', tab, tabModel);
+          model.deleteTabModel(tabModel.tabGuid);
+        });
       });
-    });
-    model.deleteWindowModel(windowModel.windowGuid);
-    updateView();
+      model.deleteWindowModel(windowModel.windowGuid, () => {
+        updateView();
+      });
     });
   }
 
@@ -239,11 +240,12 @@ function onReady() {
       newTitle = 'Window';
     }
     const windowNodeElement = getElementByGuid(windowGuid);
-    model.renameWindow(windowGuid, newTitle);
-    windowNodeElement.children('.sidebar-window-row').show();
-    windowNodeElement.children('.sidebar-window-anchor').toggleClass('sidebar-window-anchor-edit-mode', false);
-    windowNodeElement.children('input').remove();
-    updateView();
+    model.renameWindow(windowGuid, newTitle, () => {
+      windowNodeElement.children('.sidebar-window-row').show();
+      windowNodeElement.children('.sidebar-window-anchor').toggleClass('sidebar-window-anchor-edit-mode', false);
+      windowNodeElement.children('input').remove();
+      updateView();
+    });
   }
 
   function getElementByGuid(guid: string): JQuery {
@@ -591,7 +593,7 @@ function onReady() {
     logger.log('Window removed', windowId);
     const windowModel = model.getWindowModelById(windowId);
     if (!windowModel.hibernated) {
-      model.deleteWindowModel(windowModel.windowGuid);
+      model.deleteWindowModel(windowModel.windowGuid, () => {});
     }
   }
 

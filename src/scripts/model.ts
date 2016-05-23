@@ -1,6 +1,6 @@
 /// <reference no-default-lib="true"/>
 /// <reference path="../../typings/lib.es6.d.ts" />
-/// <reference path="../../typings/browser.d.ts" />
+/// <reference path="../../typings/index.d.ts" />
 
 module models {
 
@@ -24,7 +24,7 @@ module models {
       }
     }
 
-    private getOrCreateRootBookmark(callback: IBookmarkTreeNodeCallback) {
+    private getOrCreateRootBookmark(callback: (bookmark: chrome.bookmarks.BookmarkTreeNode) => void) {
       // TODO Gets broken if bookmark is removed while plugin is running
       if (this._tabsLordRootBookmark) {
         callback(this._tabsLordRootBookmark);
@@ -90,7 +90,7 @@ module models {
       }, 500);
     }
 
-    private getOrCreateWindowBookmark(windowModel: IWindowModel, callback: IBookmarkTreeNodeCallback) {
+    private getOrCreateWindowBookmark(windowModel: IWindowModel, callback: (bookmark: chrome.bookmarks.BookmarkTreeNode) => void) {
       this.getOrCreateRootBookmark(rootBookmark => {
         chrome.bookmarks.getChildren(rootBookmark.id, windowBookmarks => {
           const existingWindowBookmark = windowBookmarks ? windowBookmarks.find(windowBookmark => windowBookmark.title === windowModel.title) : undefined;
@@ -111,7 +111,7 @@ module models {
       });
     }
 
-    private deleteWindowBookmark(windowModel: IWindowModel) {
+    private deleteWindowBookmark(windowModel: IWindowModel, callback: () => void) {
       this.getOrCreateRootBookmark(rootBookmark => {
         chrome.bookmarks.getChildren(rootBookmark.id, windowBookmarks => {
           const existingWindowBookmark = windowBookmarks ? windowBookmarks.find(windowBookmark => windowBookmark.title === windowModel.title) : undefined;
@@ -303,7 +303,7 @@ module models {
       return validWindowGuid;
     }
 
-    public renameWindow(windowGuid: string, newTitle: string): void {
+    public renameWindow(windowGuid: string, newTitle: string, callback: () => void): void {
       const windowModelToRename = Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
       if (windowModelToRename.hibernated) {
         this.getOrCreateWindowBookmark(windowModelToRename, windowBookmark => {
@@ -311,6 +311,7 @@ module models {
             windowModelToRename.title = newTitle;
             this.persist();
             $(document).trigger('tabsLord:windowModelsUpdated', [{ models: [windowModelToRename] }]);
+            callback();
           });
         });
       }
@@ -318,6 +319,7 @@ module models {
         windowModelToRename.title = newTitle;
         this.persist();
         $(document).trigger('tabsLord:windowModelsUpdated', [{ models: [windowModelToRename] }]);
+        callback();
       }
     }
 
@@ -327,7 +329,7 @@ module models {
       this.persist();
     }
 
-    public deleteWindowModel(windowGuid: string): void {
+    public deleteWindowModel(windowGuid: string, callback: () => void): void {
       const windowModel = this.getWindowModelByGuid(windowGuid);
       this._windows.delete(windowGuid);
       this._tabs.forEach(tabModel => {
@@ -336,10 +338,17 @@ module models {
         }
       });
       if (windowModel.hibernated) {
-        this.deleteWindowBookmark(windowModel);
+        this.deleteWindowBookmark(windowModel, () => {
+          this.persist();
+          $(document).trigger('tabsLord:windowRemovedFromModel', [windowModel]);
+          callback();
+        });
       }
-      this.persist();
-      $(document).trigger('tabsLord:windowRemovedFromModel', [windowModel]);
+      else {
+        this.persist();
+        $(document).trigger('tabsLord:windowRemovedFromModel', [windowModel]);
+        callback();
+      }
     }
 
     /**** Tabs ****/
@@ -617,10 +626,6 @@ module models {
   interface IPersistentState {
     windows: IPersistentWindowModel[];
     tabs: IPersistentTabModel[];
-  }
-
-  interface IBookmarkTreeNodeCallback {
-    (bookmark: chrome.bookmarks.BookmarkTreeNode): void;
   }
 
 }

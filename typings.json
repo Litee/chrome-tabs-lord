@@ -1,9 +1,5 @@
 {
-  "dependencies": {
-    "chrome": "registry:dt/chrome#0.0.0+20160501161658",
-    "jquery": "registry:dt/jquery#1.10.0+20160417213236"
-  },
-  "ambientDependencies": {
+  "globalDependencies": {
     "chrome": "registry:dt/chrome#0.0.0+20160509083626",
     "chrome-app": "registry:dt/chrome-app#0.0.0+20160509082349",
     "df-visible": "registry:dt/df-visible#0.0.0+20160514174337",
@@ -11,6 +7,7 @@
     "filewriter": "registry:dt/filewriter#0.0.0+20160316155526",
     "jasmine": "registry:dt/jasmine#2.2.0+20160505161446",
     "jquery": "registry:dt/jquery#1.10.0+20160417213236",
-    "webrtc/mediastream": "registry:dt/webrtc/mediastream#0.0.0+20160317120654"
+    "webrtc/mediastream": "registry:dt/webrtc/mediastream#0.0.0+20160317120654",
+    "jasmine-jquery": "registry:dt/jasmine-jquery#0.0.0+20160317120654"
   }
 }

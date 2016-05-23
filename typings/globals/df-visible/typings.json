@@ -1,0 +1,8 @@
+{
+  "resolution": "main",
+  "tree": {
+    "src": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/da5d70b6cbae24ee6f53a51f34b32f6d81b31deb/df-visible/df-visible.d.ts",
+    "raw": "registry:dt/df-visible#0.0.0+20160514174337",
+    "typings": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/da5d70b6cbae24ee6f53a51f34b32f6d81b31deb/df-visible/df-visible.d.ts"
+  }
+}

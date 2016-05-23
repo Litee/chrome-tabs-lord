@@ -1,6 +1,6 @@
 /// <reference no-default-lib="true"/>
 /// <reference path="../../typings/lib.es6.d.ts" />
-/// <reference path="../../typings/browser.d.ts" />
+/// <reference path="../../typings/index.d.ts" />
 
 chrome.browserAction.onClicked.addListener(() => {
 

@@ -52,14 +52,11 @@ gulp.task('build-sidebar', () => {
 });
 
 gulp.task('build-tests', () => {
-  return gulp.src(['src/tests/modelTests.ts', 'src/scripts/sidebar.ts', 'src/scripts/model.ts', 'src/scripts/util.ts'])
+  return gulp.src(['src/scripts/*.tests.ts', 'src/scripts/*.ts'])
 		.pipe(sourcemaps.init())
 		.pipe(ts({
-  noImplicitAny: true,
-  out: 'allTests.js',
   noLib: true,
   target: 'es2015',
-  module: 'amd',
   removeComments : true
 		}))
 		.pipe(sourcemaps.write('.'))
@@ -72,7 +69,7 @@ gulp.task('package', () => {
 		.pipe(gulp.dest('dist'));
 });
 
-gulp.task('default', ['clean', 'ts-lint', 'build-browser-action', 'build-sidebar', 'copy-other-files']);
+gulp.task('default', ['clean', 's-lint', 'build-browser-action', 'build-sidebar', 'copy-other-files']);
 
 gulp.task('watch', () => {
   gulp.watch('src/**/*', ['ts-lint', 'build-browser-action', 'build-sidebar', 'build-tests', 'copy-other-files']);

@@ -15,11 +15,12 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      {pattern: 'dist_exploded/scripts/require/require.js', watched: false, included: true},
+      {pattern: 'dist_exploded/scripts/jquery/jquery-2.2.3.js', watched: false, included: true},
+      {pattern: 'dist_exploded/scripts/jasmine-jquery/jasmine-jquery.js', watched: false, included: true},
 
-      'dist_exploded/scripts/sidebar-init.js',
-      'dist_exploded/scripts/sidebar.js',
-      'dist_exploded/tests/*.js',
+      'dist_exploded/tests/util.js',
+      'dist_exploded/tests/model.js',
+      'dist_exploded/tests/model.tests.js',
     ],
 
 
@@ -30,14 +31,13 @@ module.exports = function(config) {
 
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
-    preprocessors: {
-    },
+    preprocessors: { 'dist_exploded/tests/*.js': ['coverage'] },
 
 
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['progress'],
+    reporters: ['progress', 'coverage'],
 
 
     // web server port
