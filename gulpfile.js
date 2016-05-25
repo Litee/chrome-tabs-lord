@@ -51,7 +51,7 @@ gulp.task('build-sidebar', () => {
 });
 
 gulp.task('package', () => {
-  return gulp.src(['dist_exploded/**/*.*', 'LICENSE'])
+  return gulp.src(['dist_exploded/**/*.*', 'LICENSE', '!dist_exploded/tests/**/*.*', , '!dist_exploded/scripts/jasmine-jquery/**/*.*'])
 		.pipe(zip('tabs-lord-extension-' + new Date().toJSON().replace(new RegExp(':', 'g'), '-') + '.zip'))
 		.pipe(gulp.dest('dist'));
 });
