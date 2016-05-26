@@ -23,7 +23,7 @@ module logger {
 
 module util {
 
-  export const SIDEBAR_EXTENSION_URL = 'chrome-extension://dnlmfamjfefjpjokgoafhofbabkipmaa/sidebar.html';
+  export const SIDEBAR_EXTENSION_URL = chrome.extension.getURL('sidebar.html');
 
   export function isSidebarExtensionUrl(url: string): boolean {
     return url === SIDEBAR_EXTENSION_URL;
