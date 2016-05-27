@@ -18,10 +18,10 @@ declare function appendSetStyleFixtures(html: string) : void;
 declare function loadJSONFixtures(...uls: string[]): jasmine.JSONFixtures;
 declare function getJSONFixture(url: string): any;
 
-declare function spyOnEvent(selector: string, eventName: string): jasmine.JQueryEventSpy;
+declare function spyOnEvent(selector: string | Element | Document, eventName: string): jasmine.JQueryEventSpy;
 
 declare namespace jasmine {
-    function spiedEventsKey(selector: JQuery, eventName: string): string;
+    function spiedEventsKey(selector: string | Element | Document, eventName: string): string;
 
     function getFixtures(): Fixtures;
     function getStyleFixtures(): StyleFixtures;
@@ -243,7 +243,7 @@ declare namespace jasmine {
          * // returns true
          * expect($('<div><span class="some-class"></span></div>')).toContainElement('span.some-class')
          */
-        toContainElement(selector: string): boolean;
+        toContainElement(selector: string | Element): boolean;
 
         /**
          * Check to see if the set of matched elements matches the given selector
@@ -253,7 +253,7 @@ declare namespace jasmine {
          *
          * @returns {Boolean} true if DOM contains the element
          */
-        toBeMatchedBy(selector: string): boolean;
+        toBeMatchedBy(selector: string | Element): boolean;
 
         /**
          * Only for tags that have disabled attribute
@@ -300,7 +300,7 @@ declare namespace jasmine {
          * Checks if the event has been triggered on selector.
          * @param selector Selector that should have triggered the event.
          */
-        toHaveBeenTriggeredOn(selector: string): boolean;
+        toHaveBeenTriggeredOn(selector: string | Element): boolean;
 
         /**
          * Checks if the event has been triggered on selector.
@@ -319,7 +319,7 @@ declare namespace jasmine {
          *
          * @param selector Selector that should have prevented the event.
          */
-        toHaveBeenPreventedOn(selector: string): boolean;
+        toHaveBeenPreventedOn(selector: string | Element): boolean;
 
         /**
          * Checks if event propagation has been stopped.
@@ -343,7 +343,7 @@ declare namespace jasmine {
          * $('#some_element').click()
          * expect('click').toHaveBeenStoppedOn('#some_element')
          */
-        toHaveBeenStoppedOn(selector: string): boolean;
+        toHaveBeenStoppedOn(selector: string | Element): boolean;
 
         /**
          * Checks to see if the matched element is attached to the DOM.
@@ -369,12 +369,12 @@ declare namespace jasmine {
     }
 
     interface JasmineJQueryEvents {
-        spyOn(selector: string, eventName: string): JQueryEventSpy;
-        args(selector: string, eventName: string): any;
-        wasTriggered(selector: string, eventName: string): boolean;
-        wasTriggeredWith(selector: string, eventName: string, expectedArgs: any, env: jasmine.Env): boolean;
-        wasPrevented(selector: string, eventName: string): boolean;
-        wasStopped(selector: string, eventName: string): boolean;
+        spyOn(selector: string | Element, eventName: string): JQueryEventSpy;
+        args(selector: string | Element, eventName: string): any;
+        wasTriggered(selector: string | Element, eventName: string): boolean;
+        wasTriggeredWith(selector: string | Element, eventName: string, expectedArgs: any, env: jasmine.Env): boolean;
+        wasPrevented(selector: string | Element, eventName: string): boolean;
+        wasStopped(selector: string | Element, eventName: string): boolean;
         cleanUp() : void;
     }
 
