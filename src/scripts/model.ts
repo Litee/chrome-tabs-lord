@@ -400,6 +400,7 @@ module models {
       tabModel.matchesFilter = this.tabMatchesCurrentFilter(tabModel);
       this._tabs.set(validTabGuid, tabModel);
       windowModel.incrementTabsCount();
+      this.updateModelsFromCurrentSearchPattern();
       this.persist();
       $(document).trigger('tabsLord:tabAddedToModel', [tabModel]);
     }
@@ -446,6 +447,7 @@ module models {
     }
 
     public deleteTabModel(tabGuid: string): void {
+      logger.debug('Deleting tab model', tabGuid);
       const tabModel = this.getTabModelByGuid(tabGuid);
       if (!tabModel) { // Can be deleted by async window deletion
         return;

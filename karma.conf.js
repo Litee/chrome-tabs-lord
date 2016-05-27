@@ -18,6 +18,7 @@ module.exports = function(config) {
       {pattern: 'dist_exploded/scripts/jquery/jquery-2.2.3.js', watched: false, included: true},
       {pattern: 'dist_exploded/scripts/jasmine-jquery/jasmine-jquery.js', watched: false, included: true},
 
+      'dist_exploded/tests/globals.js',
       'dist_exploded/tests/util.js',
       'dist_exploded/tests/model.js',
       'dist_exploded/tests/model.tests.js',
