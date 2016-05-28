@@ -28,8 +28,8 @@ function onReady() {
   const templateTabNode = $('<li>').addClass('sidebar-tab-node');
   $('<div>').addClass('sidebar-tab-row').text(' ').appendTo(templateTabNode);
   $('<span>').addClass('sidebar-tab-favicon').appendTo(templateTabNode);
-  $('<span>').addClass('sidebar-tab-icon').addClass('sidebar-tab-icon-audible').hide().appendTo(templateTabNode);
   $('<a>').addClass('sidebar-tab-anchor').attr('href', '#').attr('tabIndex', -1).appendTo(templateTabNode);
+  $('<span>').addClass('sidebar-tab-icon').addClass('sidebar-tab-icon-audible').hide().appendTo(templateTabNode);
   $('<span>').addClass('sidebar-tab-icon').addClass('sidebar-tab-icon-close').appendTo(templateTabNode);
 
   const windowsListElement = $('<ul>').addClass('sidebar-windows-list').appendTo(sidebarContainer);
