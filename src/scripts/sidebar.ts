@@ -349,10 +349,17 @@ function onReady() {
     hideContextMenu();
     const tabGuid = tabElement.id;
     const tabAnchorElement = $(tabElement).children('.sidebar-tab-anchor');
-      // TODO: Better positioning for tabs at the end of the list
-    const x = tabAnchorElement.offset().left;
-    const y = tabAnchorElement.offset().top + 20;
-    createContextMenuElement(tabGuid).css({'left':x, 'top': y}).appendTo('body');
+    const menu = createContextMenuElement(tabGuid);
+    const offset = tabAnchorElement.offset();
+    const x = offset.left;
+    const y = offset.top + 20;
+    menu.appendTo('body');
+    if (offset.top + 20 + menu.outerHeight() - $(window).scrollTop() > $(window).height()) {
+      menu.css({ 'left': x, 'bottom': ($(window).height() - y + 20), 'top': 'auto' });
+    }
+    else {
+      menu.css({ 'left': x, 'top': y, 'bottom': 'auto' });
+    }
   }
 
   function createContextMenuElement(contextTabGuid: string) {
