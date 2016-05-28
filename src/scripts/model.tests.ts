@@ -180,6 +180,22 @@ describe('Tests for tab models', () => {
     expect(spyEvent).not.toHaveBeenTriggered();
   });
 
+  it('should mark model as audible when sound is played', () => {
+    // Given
+    const model = new models.Model();
+    const spyEvent = spyOnEvent(document, 'tabsLord:tabModelsUpdated');
+    model.addWindowModel('win-1', 10, 'My Window', false);
+    model.addTabModel('win-1', 100, 'tab-1', 'My Tab 1', 'http://test.com/favicon.png', 'http://test.com', 0, false, false);
+
+    // When
+    model.updateTabModel('tab-1', {audible: true});
+
+    // Then
+    expect(model.getTabModelByGuid('tab-1').audible).toBe(true);
+
+    expect(spyEvent).toHaveBeenTriggered();
+  });
+
   it('should show/hide new tabs depending on whether they match search pattern', () => {
     // Given
     const model = new models.Model();

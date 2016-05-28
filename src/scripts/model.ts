@@ -112,15 +112,19 @@ module models {
     }
 
     private deleteWindowBookmark(windowModel: IWindowModel, callback: () => void) {
+      logger.debug('Deleting window bookmark', windowModel);
       this.getOrCreateRootBookmark(rootBookmark => {
         chrome.bookmarks.getChildren(rootBookmark.id, windowBookmarks => {
           const existingWindowBookmark = windowBookmarks ? windowBookmarks.find(windowBookmark => windowBookmark.title === windowModel.title) : undefined;
           if (existingWindowBookmark) {
             logger.debug('Found window bookmark. Removing...', existingWindowBookmark, windowModel);
-            chrome.bookmarks.removeTree(existingWindowBookmark.id);
+            chrome.bookmarks.removeTree(existingWindowBookmark.id, () => {
+              callback();
+            });
           }
           else {
             logger.debug('Could not find window bookmark. Nothing to delete.', windowModel, windowBookmarks);
+            callback();
           }
         });
       });
@@ -332,19 +336,24 @@ module models {
     public deleteWindowModel(windowGuid: string, callback: () => void): void {
       const windowModel = this.getWindowModelByGuid(windowGuid);
       this._windows.delete(windowGuid);
-      this._tabs.forEach(tabModel => {
-        if (tabModel.windowModel.windowGuid === windowGuid) {
-          this.deleteTabModel(tabModel.tabGuid);
-        }
-      });
       if (windowModel.hibernated) {
         this.deleteWindowBookmark(windowModel, () => {
+          this._tabs.forEach(tabModel => {
+            if (tabModel.windowModel.windowGuid === windowGuid) {
+              this.deleteTabModel(tabModel.tabGuid);
+            }
+          });
           this.persist();
           $(document).trigger('tabsLord:windowRemovedFromModel', [windowModel]);
           callback();
         });
       }
       else {
+        this._tabs.forEach(tabModel => {
+          if (tabModel.windowModel.windowGuid === windowGuid) {
+            this.deleteTabModel(tabModel.tabGuid);
+          }
+        });
         this.persist();
         $(document).trigger('tabsLord:windowRemovedFromModel', [windowModel]);
         callback();
@@ -406,6 +415,7 @@ module models {
     }
 
     public updateTabModel(tabGuid: string, updateInfo: TabModelUpdateInfo): void {
+      logger.debug('Updating tab model', tabGuid, updateInfo);
       const tabModel = Array.from(this._tabs.values()).find(_tabModel => _tabModel.tabGuid === tabGuid);
       if (!tabModel) { // skipping tabs which are not tracked - e.g. Tabs Lord popup itself
         return;
@@ -424,6 +434,9 @@ module models {
       }
       if (updateInfo.selected !== undefined) {
         tabModel.selected = updateInfo.selected;
+      }
+      if (updateInfo.audible !== undefined) {
+        tabModel.audible = updateInfo.audible;
       }
       const newMatchesFilterValue = this.tabMatchesCurrentFilter(tabModel);
       if (newMatchesFilterValue !== tabModel.matchesFilter) {
@@ -527,6 +540,7 @@ module models {
     title?: string;
     favIconUrl?: string;
     selected?: boolean;
+    audible?: boolean;
   }
 
   export interface IWindowModel {

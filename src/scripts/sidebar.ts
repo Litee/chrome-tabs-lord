@@ -17,11 +17,12 @@ function onReady() {
   const sidebarContainer = $('#sidebar-nodes-container').addClass('tabs-lorg-nav-root');
 
   const templateWindowNode = $('<li>').addClass('sidebar-window-node').addClass('sidebar-window-node-expanded');
-  $('<div>').addClass('sidebar-window-row').text(' ').appendTo(templateWindowNode);
-  $('<span>').addClass('sidebar-window-icon').addClass('sidebar-window-icon-expand-collapse').appendTo(templateWindowNode);
-  $('<a>').addClass('sidebar-window-anchor').attr('href', '#').attr('tabIndex', -1).appendTo(templateWindowNode);
-  $('<span>').addClass('sidebar-window-icon').addClass('sidebar-window-icon-edit').appendTo(templateWindowNode);
-  $('<span>').addClass('sidebar-window-icon').addClass('sidebar-window-icon-sleep-wake').appendTo(templateWindowNode);
+  const windowHeader = $('<div>').addClass('sidebar-window-header').appendTo(templateWindowNode);
+  $('<div>').addClass('sidebar-window-row').text(' ').appendTo(windowHeader);
+  $('<span>').addClass('sidebar-window-icon').addClass('sidebar-window-icon-expand-collapse').appendTo(windowHeader);
+  $('<a>').addClass('sidebar-window-anchor').attr('href', '#').attr('tabIndex', -1).appendTo(windowHeader);
+  $('<span>').addClass('sidebar-window-icon').addClass('sidebar-window-icon-edit').appendTo(windowHeader);
+  $('<span>').addClass('sidebar-window-icon').addClass('sidebar-window-icon-sleep-wake').appendTo(windowHeader);
   $('<ul>').addClass('sidebar-tabs-list').appendTo(templateWindowNode);
 
   const templateTabNode = $('<li>').addClass('sidebar-tab-node');
@@ -31,7 +32,7 @@ function onReady() {
   $('<a>').addClass('sidebar-tab-anchor').attr('href', '#').attr('tabIndex', -1).appendTo(templateTabNode);
   $('<span>').addClass('sidebar-tab-icon').addClass('sidebar-tab-icon-close').appendTo(templateTabNode);
 
-  const windowsListElement = $('<ul>').addClass('sidebar-nodes-container-list').appendTo(sidebarContainer);
+  const windowsListElement = $('<ul>').addClass('sidebar-windows-list').appendTo(sidebarContainer);
   bind();
   const model = new models.Model();
 
@@ -89,7 +90,7 @@ function onReady() {
       }, this))
       .on('click.sidebar', '.sidebar-window-icon-expand-collapse', $.proxy(e => {
         logger.log('Clicked window expand/collapse!', e);
-        $(e.currentTarget).parent().toggleClass('sidebar-window-node-expanded sidebar-window-node-collapsed');
+        $(e.currentTarget).parents('.sidebar-window-node').toggleClass('sidebar-window-node-expanded sidebar-window-node-collapsed');
       }, this))
       .on('contextmenu.sidebar', '.sidebar-tab-node', $.proxy(e => {
         logger.log('Context menu clicked!', e);
@@ -97,10 +98,10 @@ function onReady() {
         showNodeContextMenu(e);
       }, this))
       .on('click.sidebar', '.sidebar-window-icon-edit', $.proxy(e => {
-        startWindowNodeEdit($(e.currentTarget.parentNode));
+        startWindowNodeEdit($(e.currentTarget).parents('.sidebar-window-node'));
       }, this))
       .on('click.sidebar', '.sidebar-window-icon-sleep-wake', $.proxy(e => {
-        hibernateOrWakeUpWindow($(e.currentTarget.parentNode));
+        hibernateOrWakeUpWindow($(e.currentTarget).parents('.sidebar-window-node')[0]);
       }, this));
 
     $(document)
@@ -121,7 +122,7 @@ function onReady() {
       })
       .on('tabsLord:windowRemovedFromModel', (e, windowModel) => {
         logger.log('Global event: Window model removed', e, windowModel);
-        onChromeWindowRemovedFromModel(windowModel.windowGuid);
+        onWindowModelRemoved(windowModel);
       })
       .on('tabsLord:windowModelsUpdated', (e, data) => {
         logger.log('Global event: Window models updated', e, data);
@@ -145,11 +146,15 @@ function onReady() {
       }, this));
   }
 
-  function hibernateOrWakeUpWindow(windowNodeElement: JQuery) {
-    const windowGuid = windowNodeElement[0].id;
-    const windowModel = model.getWindowModelByGuid(windowGuid);
+  function hibernateOrWakeUpWindow(windowNodeElement: Element) {
+    if (!windowNodeElement) {
+      logger.warn('Window node not found when trying to hibernate/wake up window', windowNodeElement);
+      return;
+    }
+    const windowModel = model.getWindowModelByGuid(windowNodeElement.id);
     if (!windowModel) {
       logger.warn('Window model not found when trying to hibernate/wake up window', windowNodeElement);
+      return;
     }
     if (windowModel.hibernated) {
       wakeUpWindow(windowModel);
@@ -166,7 +171,7 @@ function onReady() {
       type: 'normal',
       focused: true,
       url: tabModels.length > 0 ? tabModels[0].url : undefined
-      }, window => {
+    }, window => {
       logger.debug('Window restored', window, windowModel);
       const newWindowModel = model.getWindowModelById(window.id);
       if (newWindowModel) {
@@ -190,17 +195,19 @@ function onReady() {
   }
 
   function hibernateWindow(windowModel: models.IWindowModel) {
+    logger.debug('Hibernating window', windowModel);
     const unhibernatedWindowsCount = model.getWindowModels().filter(_windowModel => !_windowModel.hibernated).length;
     if (unhibernatedWindowsCount === 1) {
-    // TODO Disable hibernation if the last window
-    return;
+      // Disable hibernation if the last window
+      // TODO: better UX
+      return;
     }
     let windowTitle = windowModel.title;
     if (windowTitle === 'Window') {
-    windowTitle = prompt('Enter window title to distinguish between hibernated items', '');
-    if (!windowTitle) {
-      return;
-    }
+      windowTitle = prompt('Enter window title to distinguish between hibernated items', '');
+      if (!windowTitle) {
+        return;
+      }
     }
     model.hibernateWindow(windowModel.windowGuid, windowTitle);
     chrome.windows.remove(windowModel.windowId);
@@ -209,12 +216,16 @@ function onReady() {
     updateView();
   }
 
-  function startWindowNodeEdit(windowElement: JQuery) {
-    sidebarContainer.children('input').remove(); // Cleaning up just in case
-    const windowGuid: string = windowElement[0].id;
+  function startWindowNodeEdit(windowNodeElement: JQuery) {
+    sidebarContainer.find('input').remove(); // Cleaning up just in case
+    if (!windowNodeElement || !windowNodeElement[0]) {
+      logger.warn('Could not find window node when startin edit', windowNodeElement);
+      return;
+    }
+    const windowGuid: string = windowNodeElement[0].id;
     const oldText = model.getWindowModelByGuid(windowGuid).title;
-    windowElement.children('.sidebar-window-row').hide();
-    windowElement.children('.sidebar-window-anchor').toggleClass('sidebar-window-anchor-edit-mode', true);
+    windowNodeElement.find('.sidebar-window-row').hide();
+    windowNodeElement.find('.sidebar-window-anchor').toggleClass('sidebar-window-anchor-edit-mode', true);
     const inputElement = $('<input>', {
       'value': oldText,
       'blur': () => {
@@ -230,7 +241,7 @@ function onReady() {
         }
       }
     }).addClass('sidebar-window-title-edit');
-    windowElement.children('.sidebar-window-icon-expand-collapse').after(inputElement);
+    windowNodeElement.find('.sidebar-window-icon-expand-collapse').after(inputElement);
     inputElement.focus();
     inputElement.select();
   }
@@ -241,9 +252,9 @@ function onReady() {
     }
     const windowNodeElement = getElementByGuid(windowGuid);
     model.renameWindow(windowGuid, newTitle, () => {
-      windowNodeElement.children('.sidebar-window-row').show();
-      windowNodeElement.children('.sidebar-window-anchor').toggleClass('sidebar-window-anchor-edit-mode', false);
-      windowNodeElement.children('input').remove();
+      windowNodeElement.find('.sidebar-window-row').show();
+      windowNodeElement.find('.sidebar-window-anchor').toggleClass('sidebar-window-anchor-edit-mode', false);
+      windowNodeElement.find('input').remove();
       updateView();
     });
   }
@@ -475,7 +486,7 @@ function onReady() {
       });
       model.getWindowModels().forEach(windowModel => {
         const windowElement = getElementByGuid(windowModel.windowGuid);
-        windowElement.children('.sidebar-window-anchor').text(windowModel.title + ' (' + windowModel.tabsCount + ')');
+        windowElement.find('.sidebar-window-anchor').text(windowModel.title + ' (' + windowModel.tabsCount + ')');
       });
       document.title = 'Tabs Lord v' + externsionVersion + ' (' + model.getTabsCount() + ' tabs)';
     }, 100);
@@ -494,16 +505,19 @@ function onReady() {
     .toggleClass('sidebar-window-node-collapsed', windowModel.hibernated)
     .toggleClass('sidebar-window-node-expanded', !windowModel.hibernated)
     .appendTo(windowsListElement)
-    .children('.sidebar-window-anchor')
+    .find('.sidebar-window-anchor')
     .text(windowModel.title + ' (' + windowModel.tabsCount + ')');
     updateView();
   }
 
-  function onChromeWindowRemovedFromModel(windowGuid: string) {
-    const windowElement = getElementByGuid(windowGuid);
-    if (windowElement) {
-      windowElement.remove();
+  function onWindowModelRemoved(windowModel: IWindowModel) {
+    logger.debug('Removing window node', windowModel);
+    const windowElement = getElementByGuid(windowModel.windowGuid);
+    if (!windowElement) {
+    logger.warn('Cannot find window node to remove', windowModel)
+      return;
     }
+    windowElement.remove();
   }
 
   function onTabAddedToModel(tabModel: models.ITabModel) {
@@ -524,6 +538,7 @@ function onReady() {
   }
 
   function onTabRemovedFromModel(tabModel: models.ITabModel) {
+    logger.debug('Removing tab node', tabModel);
     const tabElement = getElementByGuid(tabModel.tabGuid);
     if (tabElement) {
       tabElement.remove();
@@ -538,8 +553,6 @@ function onReady() {
       tabElement.children('.sidebar-tab-anchor').text(tabModel.title);
       tabElement.children('.sidebar-tab-favicon').css('backgroundImage', tabModel.favIconUrl ? 'url(' + tabModel.favIconUrl + ')' : '');
       tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
-      tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
-      tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', tabModel.selected);
       tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', tabModel.selected);
       tabElement.toggleClass('sidebar-tab-hidden', !tabModel.matchesFilter);
     });
@@ -547,8 +560,8 @@ function onReady() {
 
   function onWindowModelsUpdated(windowModels: models.IWindowModel[]) {
     windowModels.forEach(windowModel => {
-      const windowElement = getElementByGuid(windowModel.windowGuid);
-      if (windowElement) {
+      const windowNodeElement = getElementByGuid(windowModel.windowGuid);
+      if (windowNodeElement) {
         let windowText: string;
         if (windowModel.tabsToHide > 0 && windowModel.tabsToHide < windowModel.tabsCount) {
           windowText = windowModel.title + ' (' + (windowModel.tabsCount - windowModel.tabsToHide) + '/' + windowModel.tabsCount + ')';
@@ -556,8 +569,8 @@ function onReady() {
         else {
           windowText = windowModel.title + ' (' + windowModel.tabsCount + ')';
         }
-        windowElement.toggleClass('sidebar-window-hidden', windowModel.tabsToHide === windowModel.tabsCount);
-        windowElement.children('.sidebar-window-anchor').text(windowText);
+        windowNodeElement.toggleClass('sidebar-window-hidden', windowModel.tabsToHide === windowModel.tabsCount);
+        windowNodeElement.find('.sidebar-window-anchor').text(windowText);
       }
     });
   }
@@ -662,6 +675,7 @@ function onReady() {
       }
       if (changeInfo.audible !== undefined) {
         logger.log('Switching audible icon', changeInfo.audible);
+        updateInfo.audible = changeInfo.audible;
       }
       model.updateTabModel(tabModel.tabGuid, updateInfo);
     }
