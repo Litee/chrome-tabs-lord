@@ -510,11 +510,11 @@ function onReady() {
     updateView();
   }
 
-  function onWindowModelRemoved(windowModel: IWindowModel) {
+  function onWindowModelRemoved(windowModel: models.IWindowModel) {
     logger.debug('Removing window node', windowModel);
     const windowElement = getElementByGuid(windowModel.windowGuid);
     if (!windowElement) {
-    logger.warn('Cannot find window node to remove', windowModel)
+      logger.warn('Cannot find window node to remove', windowModel);
       return;
     }
     windowElement.remove();

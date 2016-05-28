@@ -9,13 +9,13 @@
         "sourceMap": true,
         "module": "amd",
         "noLib": true,
-        "target": "es2015",
+        "target": "es6",
         "outFile": "release_exploded/scripts/sidebar.js"
     },
     "files": [
         "src/**/*.ts",
         "typings/browser.d.ts",
-    ]
+    ],
     "exclude": [
         "scripts/dts/lib.es6.d.ts"
     ]
