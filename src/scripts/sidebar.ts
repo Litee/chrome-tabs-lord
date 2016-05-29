@@ -30,7 +30,7 @@ function onReady() {
   $('<span>').addClass('sidebar-tab-favicon').appendTo(templateTabNode);
   $('<a>').addClass('sidebar-tab-anchor').attr('href', '#').attr('tabIndex', -1).appendTo(templateTabNode);
   $('<span>').addClass('sidebar-tab-icon').addClass('sidebar-tab-icon-audible').hide().appendTo(templateTabNode);
-  $('<span>').addClass('sidebar-tab-icon').addClass('sidebar-tab-icon-close').appendTo(templateTabNode);
+  $('<span>').addClass('sidebar-tab-icon').addClass('sidebar-tab-action-icon').addClass('sidebar-tab-icon-close').appendTo(templateTabNode);
 
   const windowsListElement = $('<ul>').addClass('sidebar-windows-list').appendTo(sidebarContainer);
   bind();
@@ -77,11 +77,6 @@ function onReady() {
         logger.log('Clicked!', e);
         e.preventDefault();
         onTabNodeClicked(e);
-      }, this))
-      .on('dblclick.sidebar', '.sidebar-tab-node', $.proxy(e => {
-        logger.log('Double-Clicked!', e);
-        e.preventDefault();
-        onTabNodeDoubleClicked(e);
       }, this))
       .on('contextmenu.sidebar', '.sidebar-tab-node', $.proxy(e => {
         logger.log('Context menu clicked!', e);
@@ -328,15 +323,6 @@ function onReady() {
     }
   }
 
-  function onTabNodeDoubleClicked(e: any) {
-    hideContextMenu();
-    const tabNode = e.currentTarget;
-    const tabGuid = tabNode.id;
-    const tabModel = model.getTabModelByGuid(tabGuid);
-    logger.log('Tab node double-clicked', tabModel, tabNode, e);
-    sendMessageToGreatSuspenderExtension(tabModel.tabId, {action: tabModel.snoozed ? 'unsuspendOne' : 'suspendOne'});
-  }
-
   function hideContextMenu() {
     $('.sidebar-context-menu').remove();
   }
@@ -403,7 +389,41 @@ function onReady() {
         hideContextMenu();
       });
     });
+
     $('<li>').addClass('sidebar-context-menu-item-separator').appendTo(moveMenuUl);
+
+    /*const snoozeSelectedTabsMenuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
+    $('<a>').addClass('sidebar-context-menu-item-anchor')
+    .attr('href', '#')
+    .text('Snooze selected tab' + (selectedTabModels.length > 1 ? 's (' + selectedTabModels.length + ')' : ''))
+    .appendTo(snoozeSelectedTabsMenuItemElement)
+    .click('click', () => {
+      logger.debug('"Snoozing selected tabs" menu item clicked', selectedTabModels);
+      selectedTabModels.forEach(tabModel => {
+        if (!tabModel.snoozed) {
+          logger.debug('Snoozing tab', tabModel);
+          sendMessageToGreatSuspenderExtension(tabModel.tabId, { action: 'suspendOne' });
+        }
+      });
+      hideContextMenu();
+    });
+
+    const wakeUpSelectedTabsMenuItemElement = $('<li>').addClass('sidebar-context-menu-item').appendTo(moveMenuUl);
+    $('<a>').addClass('sidebar-context-menu-item-anchor')
+    .attr('href', '#')
+    .text('Wake up selected tab' + (selectedTabModels.length > 1 ? 's (' + selectedTabModels.length + ')' : ''))
+    .appendTo(wakeUpSelectedTabsMenuItemElement)
+    .click('click', () => {
+      logger.log('"Waking up selected tabs" menu item clicked', selectedTabModels);
+      selectedTabModels.forEach(tabModel => {
+        if (tabModel.snoozed) {
+          logger.debug('Waking up tab', tabModel);
+          sendMessageToGreatSuspenderExtension(tabModel.tabId, { action: 'unsuspendOne' });
+        }
+      });
+      hideContextMenu();
+    });*/
+
     const closeSelectedTabsMenuItemElement = $('<li>').addClass('sidebar-context-menu-item').addClass('sidebar-context-menu-item-dangerous').appendTo(moveMenuUl);
     $('<a>').addClass('sidebar-context-menu-item-anchor')
     .attr('href', '#')
