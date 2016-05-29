@@ -1,5 +1,5 @@
-// Karma configuration
-// Generated on Mon May 16 2016 00:44:07 GMT+0300 (Russia TZ 2 Standard Time)
+/* global module */
+/* eslint strict: ["off"]*/
 
 module.exports = function(config) {
   config.set({
@@ -21,7 +21,7 @@ module.exports = function(config) {
       'dist_exploded/tests/globals.js',
       'dist_exploded/tests/util.js',
       'dist_exploded/tests/model.js',
-      'dist_exploded/tests/model.tests.js',
+      'dist_exploded/tests/model.tests.js'
     ],
 
 
@@ -70,5 +70,5 @@ module.exports = function(config) {
     // Concurrency level
     // how many browser should be started simultaneous
     concurrency: Infinity
-  })
-}
+  });
+};
