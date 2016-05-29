@@ -34,7 +34,7 @@ chrome.browserAction.onClicked.addListener(() => {
     }
   }
 
-  function getOrCreateSidebarWindow(callback: ICreateSidebarWindowCallback) {
+  function getOrCreateSidebarWindow(callback: (window: chrome.windows.Window) => void) {
     chrome.tabs.query({ url: util.SIDEBAR_EXTENSION_URL }, sidebarTabs => {
       logger.log('Sidebar tabs found', sidebarTabs);
       if (sidebarTabs.length > 1) {
@@ -94,8 +94,6 @@ chrome.browserAction.onClicked.addListener(() => {
         width: preferredSidebarWidth,
         height: workAreaHeight
       }, () => {
-        // const recommendedLeftPosition = Math.max(workAreaLeft + preferredSidebarWidth, currentWindow.left);
-        // const recommendedWidth = Math.max(currentWindow.width - (recommendedLeftPosition - currentWindow.left), 100);
         const recommendedLeftPosition = workAreaLeft + preferredSidebarWidth;
         const recommendedWidth = workAreaWidth - preferredSidebarWidth;
         logger.debug('Updating window position', recommendedLeftPosition, recommendedWidth);
@@ -121,7 +119,3 @@ chrome.browserAction.onClicked.addListener(() => {
     });
   }
 });
-
-interface ICreateSidebarWindowCallback {
-    (window: chrome.windows.Window): void;
-}

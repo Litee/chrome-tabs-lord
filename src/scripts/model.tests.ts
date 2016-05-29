@@ -28,18 +28,17 @@ describe('Tests for window models', () => {
     const model = new models.Model();
     const spyEvent = spyOnEvent(document, 'tabsLord:windowRemovedFromModel');
     model.addWindowModel('win-1', 10, 'My Window', false);
+    model.addTabModel('win-1', 100, 'tab-1', 'My Tab 1', 'http://test.com/favicon.png', 'http://test.com', 0, false, false);
 
     // When, Then
     model.deleteWindowModel('win-1', () => {
-      const windowModels = model.getWindowModels();
-      expect(windowModels.length).toBe(0);
+      expect(model.getWindowModels().length).toBe(0);
       expect(model.getWindowModelByGuid('win-1')).toBeUndefined();
       expect(model.getWindowModelById(10)).toBeUndefined();
 
       expect(spyEvent).toHaveBeenTriggered();
       testDone();
     });
-
   });
 
   it('should re-use windowGuid if provided', () => {
@@ -69,7 +68,29 @@ describe('Tests for window models', () => {
     expect(spyEvent).toHaveBeenTriggered();
   });
 
-  it('should rename hibernated window', testDone => {
+  it('should create bookmark on hibernating window', testDone => {
+    // Given
+    const model = new models.Model();
+    const spyEvent = spyOnEvent(document, 'tabsLord:windowModelsUpdated');
+    spyOn(chrome.bookmarks, 'search').and.callFake((query, callback) => {
+      callback([{ id: 1001 }]);
+    });
+    spyOn(chrome.bookmarks, 'getChildren').and.callFake((parentId, callback) => {
+      callback([{ id: 1002, title: 'My Window' }]);
+    });
+    spyOn(chrome.bookmarks, 'create').and.callFake((windowBookmarkId, title, callback) => {
+      callback();
+    });
+    model.addWindowModel('win-1', 10, 'My Window', false);
+
+    // When
+    model.hibernateWindow('win-1', 'Renamed Window');
+
+    // Then - TODO, currently bookmark is created with delay - need to mock to write proper test
+    testDone();
+  });
+
+  it('should rename bookmark for hibernated window', testDone => {
     // Given
     const model = new models.Model();
     const spyEvent = spyOnEvent(document, 'tabsLord:windowModelsUpdated');
@@ -91,9 +112,29 @@ describe('Tests for window models', () => {
       expect(spyEvent).toHaveBeenTriggered();
       testDone();
     });
-
-    // Then
   });
+
+  it('should remove bookmark when removing hibernated window', testDone => {
+    // Given
+    const model = new models.Model();
+    model.addWindowModel('win-1', 10, 'My Window', true);
+    spyOn(chrome.bookmarks, 'search').and.callFake((query, callback) => {
+      callback([{id: 1001}]);
+    });
+    spyOn(chrome.bookmarks, 'getChildren').and.callFake((parentId, callback) => {
+      callback([{id: 1002, title: 'My Window'}]);
+    });
+    spyOn(chrome.bookmarks, 'removeTree').and.callFake((windowBookmarkId, callback) => {
+      callback();
+    });
+
+    // When, Then
+    model.deleteWindowModel('win-1', () => {
+      expect(chrome.bookmarks.removeTree).toHaveBeenCalledWith(1002, jasmine.any(Function));
+      testDone();
+    });
+  });
+
 });
 
 describe('Tests for tab models', () => {
@@ -160,6 +201,27 @@ describe('Tests for tab models', () => {
     expect(model.getTabModelByGuid('tab-1')).toBeUndefined();
 
     expect(spyEvent).toHaveBeenTriggered();
+  });
+
+  it('show remove tab models on window model removal', testDone => {
+    // Given
+    const model = new models.Model();
+    const spyEvent = spyOnEvent(document, 'tabsLord:tabRemovedFromModel');
+    model.addWindowModel('win-1', 10, 'My Window', false);
+    model.addTabModel('win-1', 100, 'tab-1', 'My Tab 1', 'http://test1.com/favicon.png', 'http://test1.com', 0, false, false);
+    model.addTabModel('win-1', 101, 'tab-2', 'My Tab 2', 'http://test2.com/favicon.png', 'http://test2.com', 1, false, false);
+
+    // When, Then
+    model.deleteWindowModel('win-1', () => {
+      expect(model.getTabsCount()).toBe(0);
+      expect(model.getTabModels().length).toBe(0);
+      expect(model.getTabModelByGuid('tab-1')).toBeUndefined();
+      expect(model.getTabModelById(100)).toBeUndefined();
+
+      expect(spyEvent).toHaveBeenTriggered();
+      testDone();
+    });
+
   });
 
   it('should ignore if trying to remove non-existing tab model', () => {

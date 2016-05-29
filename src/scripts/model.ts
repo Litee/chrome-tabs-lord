@@ -296,6 +296,7 @@ module models {
     }
 
     public addWindowModel(windowGuid: string, windowId: number, windowTitle: string, isHibernated: boolean): string {
+      logger.debug('Adding window model', arguments);
       const validWindowGuid = (windowGuid || this.generateGuid());
       const windowModel = new WindowModel(validWindowGuid, windowId, windowTitle, isHibernated || false);
       this._windows.set(validWindowGuid, windowModel);
@@ -308,6 +309,7 @@ module models {
     }
 
     public renameWindow(windowGuid: string, newTitle: string, callback: () => void): void {
+      logger.debug('Renaming window', arguments);
       const windowModelToRename = Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
       if (windowModelToRename.hibernated) {
         this.getOrCreateWindowBookmark(windowModelToRename, windowBookmark => {
@@ -328,9 +330,11 @@ module models {
     }
 
     public hibernateWindow(windowGuid: string, newTitle: string) {
+      logger.debug('Hibernating window', arguments);
       const foundWindowModel = Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
       foundWindowModel.hibernated = true;
       this.persist();
+      $(document).trigger('tabsLord:windowModelsUpdated', [{ models: [foundWindowModel] }]);
     }
 
     public deleteWindowModel(windowGuid: string, callback: () => void): void {
@@ -610,7 +614,6 @@ module models {
     normalizedUrl: string;
     favIconUrl: string;
     snoozed: boolean;
-    isHibernatedDeep(): boolean;
     audible: boolean;
     matchesFilter: boolean;
   }
@@ -632,10 +635,6 @@ module models {
     constructor(tabGuid: string, windowModel: IWindowModel) {
       this.tabGuid = tabGuid;
       this.windowModel = windowModel;
-    }
-
-    public isHibernatedDeep(): boolean {
-      return this.windowModel.hibernated;
     }
   }
 

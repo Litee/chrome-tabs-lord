@@ -643,7 +643,7 @@ function onReady() {
     }
     else {
       chrome.windows.get(windowId, {populate:true}, chromeWindow => {
-      if (chromeWindow.type === 'normal') {
+        if (chromeWindow.type === 'normal') {
           const activeTab = chromeWindow.tabs.find(tab => {
             return tab.active;
           });
