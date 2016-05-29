@@ -91,6 +91,7 @@ module models {
     }
 
     private getOrCreateWindowBookmark(windowModel: IWindowModel, callback: (bookmark: chrome.bookmarks.BookmarkTreeNode) => void) {
+      logger.debug('Getting or creating window bookmark', windowModel);
       this.getOrCreateRootBookmark(rootBookmark => {
         chrome.bookmarks.getChildren(rootBookmark.id, windowBookmarks => {
           const existingWindowBookmark = windowBookmarks ? windowBookmarks.find(windowBookmark => windowBookmark.title === windowModel.title) : undefined;
@@ -131,6 +132,7 @@ module models {
     }
 
     private saveTabBookmark(windowBookmarkId: string, tabModel: ITabModel, tabIndex: number) {
+      logger.debug('Saving tab bookmark', arguments);
       chrome.bookmarks.getChildren(windowBookmarkId, tabBookmarks => {
         const existingTabBookmark = tabBookmarks ? tabBookmarks.find(tabBookmark => tabBookmark.url === tabModel.url) : undefined;
         if (!existingTabBookmark) {
@@ -145,40 +147,54 @@ module models {
       });
     }
 
-    private deleteTabBookmark(tabModel: ITabModel) {
+    private deleteTabBookmark(tabModel: ITabModel, callback: () => void) {
+      logger.debug('Deleting tab bookmark', tabModel);
       this.getOrCreateRootBookmark(rootBookmark => {
         chrome.bookmarks.getChildren(rootBookmark.id, windowBookmarks => {
           const existingWindowBookmark = windowBookmarks ? windowBookmarks.find(windowBookmark => windowBookmark.title === tabModel.windowModel.title) : undefined;
           if (existingWindowBookmark) {
-            logger.debug('Found existing window bookmark. Looking to tab bookmark...', existingWindowBookmark, tabModel);
+            logger.debug('Found existing window bookmark. Looking for tab bookmark...', existingWindowBookmark, tabModel);
             chrome.bookmarks.getChildren(existingWindowBookmark.id, tabBookmarks => {
+              logger.debug('Child tab bookmarks found', tabBookmarks);
               const existingTabBookmark = tabBookmarks ? tabBookmarks.find(tabBookmark => tabBookmark.url === tabModel.url) : undefined;
               if (existingTabBookmark) {
                 logger.debug('Tab bookmark found. Removing...', existingTabBookmark, tabModel, tabBookmarks);
                 try {
-                  chrome.bookmarks.remove(existingTabBookmark.id);
+                  chrome.bookmarks.remove(existingTabBookmark.id, () => {
+                    callback();
+                  });
                 }
                 catch (err) {
                   console.warn(err);
+                  callback();
                 }
               }
+              else {
+                logger.debug('Could not find tab bookmark');
+                callback();
+              }
             });
+          }
+          else {
+            logger.debug('Could not find window bookmark');
+            callback();
           }
         });
       });
     }
 
     public restoreHibernatedWindowsAndTabs(): void {
+      logger.debug('Restoring hibernated windows and tabs');
       this.getOrCreateRootBookmark(rootBookmark => {
         chrome.bookmarks.getChildren(rootBookmark.id, windowBookmarks => {
           if (windowBookmarks) {
             windowBookmarks.sort((a, b) => a.title < b.title ? -1 : (a.title > b.title ? 1 : 0)).forEach(windowBookmark => {
-              logger.log('Restoring window from bookmarks', windowBookmark);
+              logger.debug('Restoring window from bookmarks', windowBookmark);
               const windowGuid = this.addWindowModel(undefined, Model.HIBERNATED_WINDOW_ID, windowBookmark.title, true);
               chrome.bookmarks.getChildren(windowBookmark.id, tabBookmarks => {
                 if (tabBookmarks) {
                   tabBookmarks.forEach(tabBookmark => {
-                    logger.log('Restoring tab from bookmarks', tabBookmark);
+                    logger.debug('Restoring tab from bookmarks', tabBookmark);
                     this.addTabModel(windowGuid, Model.HIBERNATED_TAB_ID, undefined, tabBookmark.title, 'chrome://favicon/' + tabBookmark.url, tabBookmark.url, 0, false, false);
                   });
                 }
@@ -190,7 +206,7 @@ module models {
       if (this._stateLoadedOnStart && this._stateLoadedOnStart.windows) {
         const hibernatedWindowsFromPreviousSession = this._stateLoadedOnStart.windows.filter(windowModel => windowModel.hibernated);
         hibernatedWindowsFromPreviousSession.forEach((windowModel: IWindowModel) => {
-          logger.log('Restoring window from state', windowModel);
+          logger.debug('Restoring window from state', windowModel);
           this.addWindowModel(windowModel.windowGuid, Model.HIBERNATED_WINDOW_ID, windowModel.title, true);
         });
       }
@@ -199,7 +215,7 @@ module models {
           const windowModel = this.getWindowModelByGuid(tabModel.windowGuid);
           if (windowModel) {
             if (windowModel.hibernated) {
-              logger.log('Restoring tab from state', tabModel);
+              logger.debug('Restoring tab from state', tabModel);
               this.addTabModel(windowModel.windowGuid, Model.HIBERNATED_TAB_ID, tabModel.tabGuid, tabModel.title, tabModel.favIconUrl, tabModel.url, tabModel.index, false, false);
             }
           }
@@ -268,7 +284,7 @@ module models {
       if (firstTabUrl && this._stateLoadedOnStart && this._stateLoadedOnStart.windows) {
         const bestMatch = this._stateLoadedOnStart.windows.find(windowModel => windowModel.firstTabUrl === firstTabUrl && !windowModel.hibernated);
         if (bestMatch) {
-          logger.log('Window from previous session found', bestMatch);
+          logger.debug('Window from previous session found', bestMatch);
           return bestMatch.title;
         }
       }
@@ -309,7 +325,7 @@ module models {
     }
 
     public renameWindow(windowGuid: string, newTitle: string, callback: () => void): void {
-      logger.debug('Renaming window', arguments);
+      logger.debug('Changing title of window model', arguments);
       const windowModelToRename = Array.from(this._windows.values()).find(windowModel => windowModel.windowGuid === windowGuid);
       if (windowModelToRename.hibernated) {
         this.getOrCreateWindowBookmark(windowModelToRename, windowBookmark => {
@@ -338,6 +354,7 @@ module models {
     }
 
     public deleteWindowModel(windowGuid: string, callback: () => void): void {
+      logger.debug('Deleting window model', windowGuid);
       const windowModel = this.getWindowModelByGuid(windowGuid);
       this._windows.delete(windowGuid);
       if (windowModel.hibernated) {
@@ -452,6 +469,7 @@ module models {
     }
 
     public moveTabToAnotherWindow(tabGuid: string, targetWindowGuid: string, pos: number) {
+      logger.debug('Moving tab to another window', arguments);
       const tabModel = this.getMutableTabModelByGuid(tabGuid);
       const targetWindowModel = this.getMutableWindowModelByGuid(targetWindowGuid);
       (<IMutableWindowModel>tabModel.windowModel).decrementTabsCount();
@@ -463,7 +481,7 @@ module models {
       $(document).trigger('tabsLord:tabAddedToModel', [tabModel]);
     }
 
-    public deleteTabModel(tabGuid: string): void {
+    public deleteTabModel(tabGuid: string, callback?: () => void): void {
       logger.debug('Deleting tab model', tabGuid);
       const tabModel = this.getTabModelByGuid(tabGuid);
       if (!tabModel) { // Can be deleted by async window deletion
@@ -473,10 +491,21 @@ module models {
       this.saveToHistory(tabModel);
       this._tabs.delete(tabGuid);
       if (tabModel.windowModel.hibernated) {
-        this.deleteTabBookmark(tabModel);
+        this.deleteTabBookmark(tabModel, () => {
+          this.persist();
+          $(document).trigger('tabsLord:tabRemovedFromModel', [tabModel]);
+          if (callback) {
+             callback();
+          }
+        });
       }
-      this.persist();
-      $(document).trigger('tabsLord:tabRemovedFromModel', [tabModel]);
+      else {
+        this.persist();
+        $(document).trigger('tabsLord:tabRemovedFromModel', [tabModel]);
+        if (callback) {
+          callback();
+        }
+      }
     }
 
     /*  public markTabModelAsNonDirty(tabGuid: string) {
@@ -487,6 +516,7 @@ module models {
       }*/
 
     public unselectAllTabs(): void {
+      logger.debug('Unselecting all tabs');
       this._tabs.forEach(tabModel => {
         tabModel.selected = false;
       });
