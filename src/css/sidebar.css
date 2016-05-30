@@ -165,15 +165,6 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 	opacity: 0.4;
 }
 
-.sidebar-tab-icon {
-	background-size: contain;
-	background-repeat: no-repeat;
-	width: 12px;
-	height: 12px;
-	align-self: center;
-	flex-shrink: 0;
-}
-
 .sidebar-tab-anchor, .sidebar-window-anchor, .sidebar-context-menu-item-anchor {
 	text-decoration: none;
 	color: inherit;
@@ -197,6 +188,15 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
     color: inherit;
 }
 
+.sidebar-tab-icon {
+	background-size: contain;
+	background-repeat: no-repeat;
+	width: 12px;
+	height: 12px;
+	align-self: center;
+	flex-shrink: 0;
+}
+
 .sidebar-tab-icon-audible {
 	background-image: url("/images/audio.png");
 	margin-left: 2px;
@@ -207,6 +207,7 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 	background-image: url("/images/close.png");
 	opacity: 0.15;
 	margin-left: auto;
+	margin-right: 3px;
 }
 
 .sidebar-tab-action-icon:hover, .sidebar-tab-action-icon:focus, .sidebar-tab-action-icon:active {
