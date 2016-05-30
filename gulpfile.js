@@ -15,7 +15,7 @@ const distScriptsDir = distExplodedDir + '/scripts';
 const distTestsDir = distExplodedDir + '/tests';
 
 gulp.task('clean', () => {
-  del(distExplodedDir);
+  return del(distExplodedDir);
 });
 
 gulp.task('ts-lint', () => {
