@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Tabs Lord",
   "description": "Chrome extension that shows vertical tabs in addition to standard horizontal ones.",
-  "version": "0.1.37",
+  "version": "0.1.38",
   "icons": {
     "16": "images/tabs-lord-icon-dark-16.png",
     "32": "images/tabs-lord-icon-dark-32.png",
