@@ -174,11 +174,6 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
     overflow: hidden;
 }
 
-.sidebar-tab-snoozed .sidebar-tab-anchor {
-	color: #C0C0C0;
-	font-style: italic;
-}
-
 .sidebar-tab-anchor:focus, .sidebar-window-anchor:focus {
     outline: 0;
 }
@@ -186,6 +181,11 @@ input[type="search"]::-webkit-search-results-decoration { display: none; }
 .sidebar-tab-anchor, .sidebar-tab-anchor:link, .sidebar-tab-anchor:visited, .sidebar-tab-anchor:hover, .sidebar-tab-anchor:active {
     text-decoration: none;
     color: inherit;
+}
+
+.sidebar-tab-snoozed .sidebar-tab-anchor {
+	color: #C0C0C0;
+	font-style: italic;
 }
 
 .sidebar-tab-icon {
