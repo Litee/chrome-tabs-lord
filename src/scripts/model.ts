@@ -393,10 +393,6 @@ module models {
       return this.makeImmutable(foundTabModel);
     }
 
-    private getMutableTabModelByGuid(tabGuid: string): ITabModel {
-      return Array.from(this._tabs.values()).find(tabModel => tabModel.tabGuid === tabGuid);
-    }
-
     public getTabModels(): ITabModel[] {
       return Array.from(this._tabs.values()).map(tabModel => this.makeImmutable(tabModel));
     }
@@ -470,7 +466,7 @@ module models {
 
     public moveTabToAnotherWindow(tabGuid: string, targetWindowGuid: string, pos: number) {
       logger.debug('Moving tab to another window', arguments);
-      const tabModel = this.getMutableTabModelByGuid(tabGuid);
+      const tabModel = Array.from(this._tabs.values()).find(x => x.tabGuid === tabGuid);
       const targetWindowModel = this.getMutableWindowModelByGuid(targetWindowGuid);
       (<IMutableWindowModel>tabModel.windowModel).decrementTabsCount();
       tabModel.windowModel = targetWindowModel;

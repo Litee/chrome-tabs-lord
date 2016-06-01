@@ -551,17 +551,23 @@ function onReady() {
     const windowElement = getElementByGuid(tabModel.windowModel.windowGuid);
     const tabsListElement = windowElement.children('.sidebar-tabs-list')[0];
     const tabElement = templateTabNode.clone().attr('id', tabModel.tabGuid);
-    tabElement.children('.sidebar-tab-anchor').text(tabModel.title).attr('title', tabModel.url);
-    tabElement.children('.sidebar-tab-favicon').css('backgroundImage', tabModel.favIconUrl ? 'url(' + tabModel.favIconUrl + ')' : '');
-    tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
+    updateTabElementFromModel(tabElement, tabModel);
     if (tabModel.index < 0) {
       tabsListElement.appendChild(tabElement[0]);
     }
     else {
       tabsListElement.insertBefore(tabElement[0], tabsListElement.children[tabModel.index]);
     }
-      // Model update
+    // Model update
     updateView();
+  }
+
+  function updateTabElementFromModel(tabElement: JQuery, tabModel: models.ITabModel) {
+    tabElement.toggleClass('sidebar-tab-hidden', !tabModel.matchesFilter);
+    tabElement.children('.sidebar-tab-anchor').text(tabModel.title).attr('title', tabModel.url);
+    tabElement.children('.sidebar-tab-favicon').css('backgroundImage', tabModel.favIconUrl ? 'url(' + tabModel.favIconUrl + ')' : '');
+    tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
+    tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', tabModel.selected);
   }
 
   function onTabRemovedFromModel(tabModel: models.ITabModel) {
@@ -576,12 +582,7 @@ function onReady() {
   function onTabModelsUpdated(tabModels: models.ITabModel[]) {
     tabModels.forEach(tabModel => {
       const tabElement = getElementByGuid(tabModel.tabGuid);
-      tabElement.children('.sidebar-tab-anchor').attr('title', tabModel.url);
-      tabElement.children('.sidebar-tab-anchor').text(tabModel.title);
-      tabElement.children('.sidebar-tab-favicon').css('backgroundImage', tabModel.favIconUrl ? 'url(' + tabModel.favIconUrl + ')' : '');
-      tabElement.children('.sidebar-tab-icon-audible').toggle(tabModel.audible);
-      tabElement.children('.sidebar-tab-row').toggleClass('sidebar-tab-selected', tabModel.selected);
-      tabElement.toggleClass('sidebar-tab-hidden', !tabModel.matchesFilter);
+      updateTabElementFromModel(tabElement, tabModel);
     });
   }
 
