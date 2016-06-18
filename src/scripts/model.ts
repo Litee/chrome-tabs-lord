@@ -429,6 +429,9 @@ module models {
       this.updateModelsFromCurrentSearchPattern();
       this.persist();
       $(document).trigger('tabsLord:tabAddedToModel', [tabModel]);
+      if (isTabAudible) {
+        $(document).trigger('tabsLord:globalFlagsChanged', [{ audible: Array.from(this._tabs.values()).some(x => x.audible) }]);
+      }
     }
 
     public updateTabModel(tabGuid: string, updateInfo: TabModelUpdateInfo): void {
@@ -462,6 +465,9 @@ module models {
       }
       this.persist();
       $(document).trigger('tabsLord:tabModelsUpdated', [{ models: [tabModel] }]);
+      if (typeof updateInfo.audible !== 'undefined') {
+        $(document).trigger('tabsLord:globalFlagsChanged', [{ audible: Array.from(this._tabs.values()).some(x => x.audible) }]);
+      }
     }
 
     public moveTabToAnotherWindow(tabGuid: string, targetWindowGuid: string, pos: number) {

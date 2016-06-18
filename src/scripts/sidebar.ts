@@ -35,6 +35,7 @@ function onReady() {
   const windowsListElement = $('<ul>').addClass('sidebar-windows-list').appendTo(sidebarContainer);
   bind();
   const model = new models.Model();
+  onGlobalFlagsChanged({ audible: false });
 
   logger.log('Parsing existing windows...');
   chrome.windows.getAll({populate: true, windowTypes: ['normal']}, windowsArr => {
@@ -111,6 +112,10 @@ function onReady() {
           hideContextMenu();
         }
       })
+      .on('tabsLord:globalFlagsChanged', (e, globalFlags) => {
+        logger.log('Global event: flags changed', e, globalFlags);
+        onGlobalFlagsChanged(globalFlags);
+      })
       .on('tabsLord:windowAddedToModel', (e, windowModel) => {
         logger.log('Global event: Window model added', e, windowModel);
         onWindowAddedToModel(windowModel);
@@ -138,7 +143,26 @@ function onReady() {
       .on('click.sidebar', '#sidebar-reset-search-button', $.proxy(e => {
         $('#sidebar-search-box').val('');
         search('');
+      }, this))
+      .on('click.sidebar', '#sidebar-go-to-audible-button', $.proxy(e => {
+        activeAudibleTab();
       }, this));
+  }
+
+  function onGlobalFlagsChanged(globalFlags: {audible: boolean}) {
+    $('#sidebar-go-to-audible-button').parent().toggle(globalFlags.audible);
+  }
+
+  function activeAudibleTab() {
+    logger.debug('Activating audible tab...');
+    let audibleTabModel = model.getTabModels().find(tabModel => tabModel.audible);
+    if (audibleTabModel) {
+      logger.debug('Audible tab found', audibleTabModel);
+      activateChromeTab(audibleTabModel);
+    }
+    else {
+      logger.warn('Cannot find audible tab');
+    }
   }
 
   function hibernateOrWakeUpWindow(windowNodeElement: Element) {
@@ -309,18 +333,22 @@ function onReady() {
       model.updateTabModel(tabGuid, {selected: true});
     }
     else {
-      chrome.tabs.get(tabModel.tabId, tab => { // Select tab in normal window - activate the tab
-        chrome.windows.get(tab.windowId, {}, window => {
-          if (!tab.active) {
-            logger.log('Activating tab because node was selected', tab);
-            chrome.tabs.update(tab.id, {active: true});
-          }
-          if (!window.focused) {
-            chrome.windows.update(tab.windowId, {focused: true});
-          }
-        });
-      });
+      activateChromeTab(tabModel);
     }
+  }
+
+  function activateChromeTab(tabModel: models.ITabModel) {
+    chrome.tabs.get(tabModel.tabId, tab => { // Select tab in normal window - activate the tab
+      chrome.windows.get(tab.windowId, {}, window => {
+        if (!tab.active) {
+          logger.log('Activating tab because node was selected', tab);
+          chrome.tabs.update(tab.id, { active: true });
+        }
+        if (!window.focused) {
+          chrome.windows.update(tab.windowId, { focused: true });
+        }
+      });
+    });
   }
 
   function hideContextMenu() {

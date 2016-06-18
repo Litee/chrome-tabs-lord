@@ -340,11 +340,46 @@ describe('Tests for tab models', () => {
     // Given
     const model = new models.Model();
     const spyEvent = spyOnEvent(document, 'tabsLord:tabModelsUpdated');
+    const spyEvent2 = spyOnEvent(document, 'tabsLord:globalFlagsChanged');
     model.addWindowModel('win-1', 10, 'My Window', false);
     model.addTabModel('win-1', 100, 'tab-1', 'My Tab 1', 'http://test.com/favicon.png', 'http://test.com', 0, false, false);
 
     // When
     model.updateTabModel('tab-1', {audible: true});
+
+    // Then
+    expect(model.getTabModelByGuid('tab-1').audible).toBe(true);
+
+    expect(spyEvent).toHaveBeenTriggered();
+    expect(spyEvent2).toHaveBeenTriggered();
+  });
+
+  it('should mark model as non-audible when sound has stopped', () => {
+    // Given
+    const model = new models.Model();
+    const spyEvent = spyOnEvent(document, 'tabsLord:tabModelsUpdated');
+    const spyEvent2 = spyOnEvent(document, 'tabsLord:globalFlagsChanged');
+    model.addWindowModel('win-1', 10, 'My Window', false);
+    model.addTabModel('win-1', 100, 'tab-1', 'My Tab 1', 'http://test.com/favicon.png', 'http://test.com', 0, false, true);
+
+    // When
+    model.updateTabModel('tab-1', { audible: false });
+
+    // Then
+    expect(model.getTabModelByGuid('tab-1').audible).toBe(false);
+
+    expect(spyEvent).toHaveBeenTriggered();
+    expect(spyEvent2).toHaveBeenTriggered();
+  });
+
+  it('should set global audible flag if audible tab model is added', () => {
+    // Given
+    const model = new models.Model();
+    const spyEvent = spyOnEvent(document, 'tabsLord:globalFlagsChanged');
+    model.addWindowModel('win-1', 10, 'My Window', false);
+
+    // When
+    model.addTabModel('win-1', 100, 'tab-1', 'My Tab 1', 'http://test.com/favicon.png', 'http://test.com', 0, false, true);
 
     // Then
     expect(model.getTabModelByGuid('tab-1').audible).toBe(true);
@@ -393,5 +428,4 @@ describe('Tests for tab models', () => {
 
     expect(spyEvent).toHaveBeenTriggered();
   });
-
 });

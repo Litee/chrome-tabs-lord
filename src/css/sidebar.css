@@ -16,6 +16,10 @@ body {
 	width: 100%;
 }
 
+td.top-panel-icon {
+	width: 24px;
+}
+
 #sidebar-search-box td {
 	padding 0;
 }
@@ -28,6 +32,16 @@ body {
 	width: 24px;
 	height: 24px;
     background-image: url("/images/reset-search.png");
+}
+
+#sidebar-go-to-audible-button {
+	display: block;
+	background-size: auto;
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	width: 24px;
+	height: 24px;
+    background-image: url("/images/audio.png");
 }
 
 span#sidebar-reset-search-button.sidebar-reset-search-button-active {
