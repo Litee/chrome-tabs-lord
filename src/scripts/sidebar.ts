@@ -311,14 +311,14 @@ function onReady() {
       return;
     }
     const tabElement = getElementByGuid(tabGuid);
-    if (!e.shiftKey) {
+    /*if (!e.shiftKey) {
       lastClickedTabModelForShiftSelect = tabModel;
-    }
+    }*/
     if (e.ctrlKey) { // Add to selection
       const newTabSelectedValue = !tabModel.selected;
       model.updateTabModel(tabGuid, {selected: newTabSelectedValue});
     }
-    else if (e.shiftKey) {
+    /*else if (e.shiftKey) {
       if (lastClickedTabModelForShiftSelect && lastClickedTabModelForShiftSelect.windowModel.windowGuid === tabModel.windowModel.windowGuid) { // selection within same window
         const selectionStart = Math.min(lastClickedTabModelForShiftSelect.index, tabModel.index);
         const selectionEnd = Math.max(lastClickedTabModelForShiftSelect.index, tabModel.index);
@@ -327,7 +327,7 @@ function onReady() {
       else {
         // TODO
       }
-    }
+    }*/
     else if (tabModel.windowModel && tabModel.windowModel.hibernated) { // Select tab in hibernated window - nothing to activate
       model.unselectAllTabs();
       model.updateTabModel(tabGuid, {selected: true});
