@@ -75,9 +75,11 @@ chrome.browserAction.onClicked.addListener(() => {
         const displayMidX = displaysInfo[i].workArea.left + displaysInfo[i].workArea.width;
         const displayMidY = displaysInfo[i].workArea.top + displaysInfo[i].workArea.height;
         const distanceToDisplayCenter = Math.sqrt(Math.pow(windowMidX - displayMidX, 2) + Math.pow(windowMidY - displayMidY, 2));
+        logger.log('Calculated distance to display center', i, displayMidX, displayMidY, distanceToDisplayCenter, displaysInfo[i]);
         if (distanceToDisplayCenter < bestDistance) {
           bestDisplay = i;
           bestDistance = distanceToDisplayCenter;
+          logger.log('Better display found', bestDisplay, bestDistance);
         }
       }
       const bestDisplayInfo = displaysInfo[bestDisplay];
